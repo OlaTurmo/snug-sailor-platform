@@ -17,21 +17,21 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted, starting login process');
     setIsLoading(true);
     
     try {
-      console.log('Starting login attempt with email:', email);
+      console.log('Attempting login with email:', email);
       await login(email, password);
-      console.log('Login successful, navigating to oversikt');
+      console.log('Login successful, preparing to navigate');
       
-      // Force a small delay to ensure state is updated
-      setTimeout(() => {
-        toast({
-          title: "Innlogget",
-          description: "Du er nå logget inn.",
-        });
-        navigate("/oversikt", { replace: true });
-      }, 100);
+      toast({
+        title: "Innlogget",
+        description: "Du er nå logget inn.",
+      });
+      
+      console.log('Navigating to /oversikt');
+      navigate("/oversikt", { replace: true });
       
     } catch (error) {
       console.error('Login error in component:', error);

@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
     const checkSession = async () => {
       try {
         console.log('Checking session...');
@@ -120,7 +119,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw new Error('No user returned after login');
     }
 
-    console.log('Supabase auth successful, fetching profile...');
+    console.log('Supabase auth successful, fetching profile...', { userId: authUser.id });
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -133,9 +132,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw profileError;
     }
 
+    if (!profile) {
+      console.error('No profile found for user');
+      throw new Error('No profile found for user');
+    }
+
     console.log('Profile fetched successfully:', profile);
 
-    const userData = {
+    const userData: User = {
       id: authUser.id,
       email: authUser.email!,
       name: profile.name,
@@ -145,10 +149,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       updatedAt: new Date(profile.updated_at),
     };
 
-    // Ensure state is updated synchronously
-    await Promise.resolve();
+    console.log('Setting user state with:', userData);
     setUser(userData);
-    console.log('Login process completed successfully, user state updated:', userData);
+    
+    // Wait for state to update
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const currentUser = user;
+    console.log('Current user state after update:', currentUser);
+    
+    if (!currentUser) {
+      console.error('User state not updated properly');
+      throw new Error('User state not updated properly');
+    }
+
+    console.log('Login process completed successfully');
   };
 
   const logout = async () => {
