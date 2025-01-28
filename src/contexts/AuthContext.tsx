@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole, Permission } from '../types/user';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -18,17 +19,99 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Here we would check for an existing session
-    console.log('Checking for existing session...');
-    setIsLoading(false);
+    // Check for existing session
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email!,
+              name: profile.name,
+              role: profile.role || 'responsible_heir',
+              permissions: profile.permissions || ['full_edit'],
+              createdAt: new Date(profile.created_at),
+              updatedAt: new Date(profile.updated_at),
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSession();
+
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email!,
+            name: profile.name,
+            role: profile.role || 'responsible_heir',
+            permissions: profile.permissions || ['full_edit'],
+            createdAt: new Date(profile.created_at),
+            updatedAt: new Date(profile.updated_at),
+          });
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signup = async (email: string, password: string, name: string) => {
     try {
       console.log('Signing up...', { email, name });
-      // Here we would implement actual signup logic with Supabase
+      const { data: { user: authUser }, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (signUpError) throw signUpError;
+      if (!authUser) throw new Error('No user returned after signup');
+
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authUser.id,
+            name,
+            email,
+            role: 'responsible_heir',
+            permissions: ['full_edit'],
+          }
+        ]);
+
+      if (profileError) throw profileError;
+
       setUser({
-        id: '1',
+        id: authUser.id,
         email,
         name,
         role: 'responsible_heir',
@@ -45,15 +128,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       console.log('Logging in...', email);
-      // Here we would implement actual login logic
-      setUser({
-        id: '1',
+      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        name: 'Test User',
-        role: 'responsible_heir',
-        permissions: ['full_edit'],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        password,
+      });
+
+      if (signInError) throw signInError;
+      if (!authUser) throw new Error('No user returned after login');
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      setUser({
+        id: authUser.id,
+        email: authUser.email!,
+        name: profile.name,
+        role: profile.role || 'responsible_heir',
+        permissions: profile.permissions || ['full_edit'],
+        createdAt: new Date(profile.created_at),
+        updatedAt: new Date(profile.updated_at),
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -64,7 +162,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     try {
       console.log('Logging out...');
-      // Here we would implement actual logout logic
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);

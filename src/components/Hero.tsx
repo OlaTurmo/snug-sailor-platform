@@ -24,7 +24,7 @@ export const Hero = () => {
             <Button 
               variant="outline" 
               className="text-lg px-8 py-6"
-              onClick={() => navigate("/signup")}
+              onClick={() => navigate("/how-it-works")}
             >
               Les mer om prosessen
             </Button>
