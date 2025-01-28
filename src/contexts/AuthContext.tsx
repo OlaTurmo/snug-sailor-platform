@@ -19,35 +19,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const updateUserState = async (supabaseUserId: string) => {
-    console.log('=== Update User State Start ===');
-    console.log('Fetching user profile for ID:', supabaseUserId);
+    console.log('=== Profile Fetch Process Start ===');
+    console.log('Attempting to fetch profile for user ID:', supabaseUserId);
     
     try {
-      console.log('Making Supabase query to profiles table...');
+      // First, verify the user ID is valid
+      if (!supabaseUserId) {
+        throw new Error('Invalid user ID provided');
+      }
+
+      // Fetch the profile with detailed logging
+      console.log('Making database query to profiles table...');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', supabaseUserId)
         .single();
 
+      // Handle profile fetch errors
       if (profileError) {
-        console.error('Profile fetch error details:', {
+        console.error('Profile fetch failed:', {
           message: profileError.message,
           details: profileError.details,
-          hint: profileError.hint
+          hint: profileError.hint,
+          code: profileError.code
         });
         throw profileError;
       }
 
-      console.log('Raw profile data received:', profile);
-
+      // Validate profile data
       if (!profile) {
-        console.error('No profile found for user ID:', supabaseUserId);
-        throw new Error('No profile found');
+        console.error('No profile data returned for ID:', supabaseUserId);
+        throw new Error('Profile not found');
       }
 
-      console.log('Profile fetched successfully:', profile);
-      
+      console.log('Profile data retrieved successfully:', profile);
+
+      // Construct user object with strict type checking
       const userData: User = {
         id: supabaseUserId,
         email: profile.email,
@@ -57,70 +65,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         createdAt: new Date(profile.created_at),
         updatedAt: new Date(profile.updated_at),
       };
+
+      console.log('Setting user state with validated data:', userData);
       
-      console.log('Setting user state with:', userData);
+      // Update user state
       setUser(userData);
       console.log('User state updated successfully');
       
+      return userData; // Return the user data for immediate use if needed
+      
     } catch (error) {
-      console.error('Detailed error in updateUserState:', {
+      console.error('Profile fetch process failed:', {
         error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        errorStack: error instanceof Error ? error.stack : undefined
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       });
       throw error;
     } finally {
-      console.log('=== Update User State End ===');
+      console.log('=== Profile Fetch Process End ===');
     }
   };
-
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        console.log('Checking session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session check error:', error);
-          return;
-        }
-        
-        if (session?.user) {
-          console.log('Found existing session:', session.user.id);
-          await updateUserState(session.user.id);
-        } else {
-          console.log('No active session found');
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change event:', event, session?.user?.id);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('Processing SIGNED_IN event for user:', session.user.id);
-        try {
-          await updateUserState(session.user.id);
-          console.log('User state updated after sign in');
-        } catch (error) {
-          console.error('Error updating user state after sign in:', error);
-        }
-      } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out, clearing user state');
-        setUser(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   const login = async (email: string, password: string) => {
     console.log('Starting login process...', { email });
@@ -259,6 +223,59 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const isRole = (role: UserRole): boolean => {
     return user?.role === role;
   };
+
+  useEffect(() => {
+    const checkSession = async () => {
+      console.log('=== Session Check Start ===');
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session check failed:', error);
+          return;
+        }
+        
+        if (session?.user) {
+          console.log('Active session found:', session.user.id);
+          await updateUserState(session.user.id);
+        } else {
+          console.log('No active session found');
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Session check error:', error);
+      } finally {
+        setIsLoading(false);
+        console.log('=== Session Check End ===');
+      }
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('=== Auth State Change Event ===');
+      console.log('Event type:', event);
+      console.log('Session present:', !!session);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('Processing SIGNED_IN event for user:', session.user.id);
+        try {
+          const userData = await updateUserState(session.user.id);
+          console.log('User state updated after sign in:', userData);
+        } catch (error) {
+          console.error('Failed to update user state after sign in:', error);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out, clearing user state');
+        setUser(null);
+      }
+      console.log('=== Auth State Change Event End ===');
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, signup, hasPermission, isRole }}>
