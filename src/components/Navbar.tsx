@@ -13,24 +13,26 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 export const Navbar = () => {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   const ListItem = ({
     className,
     title,
     children,
+    to,
     ...props
   }: {
     className?: string;
     title: string;
     children?: React.ReactNode;
-    href: string;
+    to: string;
   }) => {
     return (
       <li>
         <NavigationMenuLink asChild>
           <Link
+            to={to}
             className={cn(
               "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
               className
@@ -63,13 +65,13 @@ export const Navbar = () => {
                     <NavigationMenuTrigger>Oversikt</NavigationMenuTrigger>
                     <NavigationMenuContent>
                       <ul className="grid w-[400px] gap-3 p-4">
-                        <ListItem href="/oversikt" title="Dashbord">
+                        <ListItem to="/oversikt" title="Dashbord">
                           Hovedoversikt og varsler
                         </ListItem>
-                        <ListItem href="/finance" title="Økonomi">
+                        <ListItem to="/finance" title="Økonomi">
                           Økonomistyring og regnskap
                         </ListItem>
-                        <ListItem href="/tasks" title="Oppgaver">
+                        <ListItem to="/tasks" title="Oppgaver">
                           Oppgaveliste og fremdrift
                         </ListItem>
                       </ul>
@@ -80,10 +82,10 @@ export const Navbar = () => {
                     <NavigationMenuTrigger>Dokumenter</NavigationMenuTrigger>
                     <NavigationMenuContent>
                       <ul className="grid w-[400px] gap-3 p-4">
-                        <ListItem href="/documents" title="Dokumenthåndtering">
+                        <ListItem to="/documents" title="Dokumenthåndtering">
                           Last opp og organiser dokumenter
                         </ListItem>
-                        <ListItem href="/collaboration" title="Samarbeid">
+                        <ListItem to="/collaboration" title="Samarbeid">
                           Del og samarbeid med andre
                         </ListItem>
                       </ul>
@@ -94,10 +96,10 @@ export const Navbar = () => {
                     <NavigationMenuTrigger>Økonomi</NavigationMenuTrigger>
                     <NavigationMenuContent>
                       <ul className="grid w-[400px] gap-3 p-4">
-                        <ListItem href="/finance" title="Økonomistyring">
+                        <ListItem to="/finance" title="Økonomistyring">
                           Inntekter, utgifter og regnskap
                         </ListItem>
-                        <ListItem href="/assets-liabilities" title="Eiendeler og Gjeld">
+                        <ListItem to="/assets-liabilities" title="Eiendeler og Gjeld">
                           Oversikt over verdier og forpliktelser
                         </ListItem>
                       </ul>
@@ -106,7 +108,7 @@ export const Navbar = () => {
                 </NavigationMenuList>
               </NavigationMenu>
 
-              <Button onClick={() => signOut()} variant="outline">
+              <Button onClick={() => logout()} variant="outline">
                 Logg ut
               </Button>
             </div>
@@ -198,7 +200,7 @@ export const Navbar = () => {
                 Oppgaver
               </Link>
               <Button
-                onClick={() => signOut()}
+                onClick={() => logout()}
                 variant="outline"
                 className="w-full mt-4"
               >
