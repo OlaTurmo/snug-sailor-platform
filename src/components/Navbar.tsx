@@ -1,252 +1,226 @@
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Home,
-  Info,
-  Users,
-  Globe,
-  FileText,
-  Menu,
-  HelpCircle,
-  Phone,
-  CreditCard,
-  LogOut,
-  ClipboardList,
-  FileStack,
-  PiggyBank,
-  Users2,
-} from "lucide-react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import { Button } from "./ui/button";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export const Navbar = () => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
+  const { user, signOut } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast({
-        title: "Utlogget",
-        description: "Du er nå logget ut.",
-      });
-      navigate("/");
-    } catch (error) {
-      toast({
-        title: "Feil ved utlogging",
-        description: "Kunne ikke logge ut.",
-        variant: "destructive",
-      });
-    }
+  const ListItem = ({
+    className,
+    title,
+    children,
+    ...props
+  }: {
+    className?: string;
+    title: string;
+    children?: React.ReactNode;
+    href: string;
+  }) => {
+    return (
+      <li>
+        <NavigationMenuLink asChild>
+          <Link
+            className={cn(
+              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+              className
+            )}
+            {...props}
+          >
+            <div className="text-sm font-medium leading-none">{title}</div>
+            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+              {children}
+            </p>
+          </Link>
+        </NavigationMenuLink>
+      </li>
+    );
   };
 
-  const isActive = (path: string) => location.pathname === path;
-
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] bg-clip-text text-transparent">
-          Arv.ing
-        </Link>
-        
-        {/* Desktop Navigation */}
-        <div className="hidden lg:flex gap-8 items-center">
-          <Link 
-            to="/" 
-            className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/") ? "text-gray-900 font-medium" : ""}`}
-          >
-            <Home size={18} />
-            Hjem
+    <nav className="fixed top-0 w-full bg-white border-b z-50">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="text-xl font-bold">
+            Arveoppgjør
           </Link>
 
-          {!user ? (
-            <>
-              <Link 
-                to="/how-it-works" 
-                className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/how-it-works") ? "text-gray-900 font-medium" : ""}`}
-              >
-                <Info size={18} />
-                Slik fungerer det
-              </Link>
-              <Link 
-                to="/pricing" 
-                className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/pricing") ? "text-gray-900 font-medium" : ""}`}
-              >
-                <CreditCard size={18} />
-                Priser
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link 
-                to="/oversikt" 
-                className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/oversikt") ? "text-gray-900 font-medium" : ""}`}
-              >
-                <ClipboardList size={18} />
-                Oversikt
-              </Link>
-              <Link 
-                to="/tasks" 
-                className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/tasks") ? "text-gray-900 font-medium" : ""}`}
-              >
-                <FileStack size={18} />
-                Oppgaver
-              </Link>
-              <Link 
-                to="/finance" 
-                className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/finance") ? "text-gray-900 font-medium" : ""}`}
-              >
-                <PiggyBank size={18} />
-                Økonomi
-              </Link>
-              <Link 
-                to="/collaboration" 
-                className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/collaboration") ? "text-gray-900 font-medium" : ""}`}
-              >
-                <Users2 size={18} />
-                Samarbeid
-              </Link>
-            </>
-          )}
-
-          <Link 
-            to="/contact" 
-            className={`text-gray-600 hover:text-gray-900 flex items-center gap-2 ${isActive("/contact") ? "text-gray-900 font-medium" : ""}`}
-          >
-            <Phone size={18} />
-            Kontakt oss
-          </Link>
-          
-          {/* Language Selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                <Globe size={18} />
-                Språk
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Norsk</DropdownMenuItem>
-              <DropdownMenuItem>English</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Login/Logout Button */}
           {user ? (
-            <Button 
-              onClick={handleLogout}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <LogOut size={18} />
-              Logg ut
-            </Button>
+            <div className="hidden md:flex items-center space-x-4">
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Oversikt</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[400px] gap-3 p-4">
+                        <ListItem href="/oversikt" title="Dashbord">
+                          Hovedoversikt og varsler
+                        </ListItem>
+                        <ListItem href="/finance" title="Økonomi">
+                          Økonomistyring og regnskap
+                        </ListItem>
+                        <ListItem href="/tasks" title="Oppgaver">
+                          Oppgaveliste og fremdrift
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Dokumenter</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[400px] gap-3 p-4">
+                        <ListItem href="/documents" title="Dokumenthåndtering">
+                          Last opp og organiser dokumenter
+                        </ListItem>
+                        <ListItem href="/collaboration" title="Samarbeid">
+                          Del og samarbeid med andre
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger>Økonomi</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[400px] gap-3 p-4">
+                        <ListItem href="/finance" title="Økonomistyring">
+                          Inntekter, utgifter og regnskap
+                        </ListItem>
+                        <ListItem href="/assets-liabilities" title="Eiendeler og Gjeld">
+                          Oversikt over verdier og forpliktelser
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+
+              <Button onClick={() => signOut()} variant="outline">
+                Logg ut
+              </Button>
+            </div>
           ) : (
-            <Button 
-              onClick={() => navigate("/login")}
-              className="bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] hover:opacity-90 flex items-center gap-2"
-            >
-              <Users size={18} />
-              Logg inn
-            </Button>
+            <div className="flex items-center space-x-4">
+              <Link to="/login">
+                <Button variant="outline">Logg inn</Button>
+              </Link>
+              <Link to="/signup">
+                <Button>Registrer</Button>
+              </Link>
+            </div>
           )}
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md"
+            >
+              <span className="sr-only">Åpne hovedmeny</span>
+              {/* Menu icon */}
+              <svg
+                className={`${isOpen ? "hidden" : "block"} h-6 w-6`}
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+              {/* Close icon */}
+              <svg
+                className={`${isOpen ? "block" : "hidden"} h-6 w-6`}
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </Button>
+          </div>
         </div>
 
-        {/* Mobile Navigation */}
-        <div className="lg:hidden">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <Menu size={24} />
+        {/* Mobile menu */}
+        <div className={`${isOpen ? "block" : "hidden"} md:hidden pb-4`}>
+          {user ? (
+            <div className="space-y-2">
+              <Link
+                to="/oversikt"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 rounded"
+              >
+                Oversikt
+              </Link>
+              <Link
+                to="/finance"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 rounded"
+              >
+                Økonomi
+              </Link>
+              <Link
+                to="/assets-liabilities"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 rounded"
+              >
+                Eiendeler og Gjeld
+              </Link>
+              <Link
+                to="/documents"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 rounded"
+              >
+                Dokumenter
+              </Link>
+              <Link
+                to="/tasks"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 rounded"
+              >
+                Oppgaver
+              </Link>
+              <Button
+                onClick={() => signOut()}
+                variant="outline"
+                className="w-full mt-4"
+              >
+                Logg ut
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
-              <DropdownMenuItem asChild>
-                <Link to="/" className="flex items-center gap-2 w-full">
-                  <Home size={18} />
-                  Hjem
-                </Link>
-              </DropdownMenuItem>
-
-              {!user ? (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link to="/how-it-works" className="flex items-center gap-2 w-full">
-                      <Info size={18} />
-                      Slik fungerer det
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/pricing" className="flex items-center gap-2 w-full">
-                      <CreditCard size={18} />
-                      Priser
-                    </Link>
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem asChild>
-                    <Link to="/oversikt" className="flex items-center gap-2 w-full">
-                      <ClipboardList size={18} />
-                      Oversikt
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/tasks" className="flex items-center gap-2 w-full">
-                      <FileStack size={18} />
-                      Oppgaver
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/finance" className="flex items-center gap-2 w-full">
-                      <PiggyBank size={18} />
-                      Økonomi
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/collaboration" className="flex items-center gap-2 w-full">
-                      <Users2 size={18} />
-                      Samarbeid
-                    </Link>
-                  </DropdownMenuItem>
-                </>
-              )}
-
-              <DropdownMenuItem asChild>
-                <Link to="/contact" className="flex items-center gap-2 w-full">
-                  <Phone size={18} />
-                  Kontakt oss
-                </Link>
-              </DropdownMenuItem>
-
-              {user ? (
-                <DropdownMenuItem onClick={handleLogout}>
-                  <div className="flex items-center gap-2 w-full">
-                    <LogOut size={18} />
-                    Logg ut
-                  </div>
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem asChild>
-                  <Button 
-                    onClick={() => navigate("/login")}
-                    className="w-full bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] hover:opacity-90 flex items-center gap-2"
-                  >
-                    <Users size={18} />
-                    Logg inn
-                  </Button>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Link
+                to="/login"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 rounded"
+              >
+                Logg inn
+              </Link>
+              <Link
+                to="/signup"
+                className="block px-4 py-2 text-sm hover:bg-gray-100 rounded"
+              >
+                Registrer
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>
