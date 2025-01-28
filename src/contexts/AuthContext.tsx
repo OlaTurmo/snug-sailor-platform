@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('Fetching user profile for ID:', supabaseUserId);
     
     try {
+      console.log('Making Supabase query to profiles table...');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -30,9 +31,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
 
       if (profileError) {
-        console.error('Profile fetch error:', profileError);
+        console.error('Profile fetch error details:', {
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint
+        });
         throw profileError;
       }
+
+      console.log('Raw profile data received:', profile);
 
       if (!profile) {
         console.error('No profile found for user ID:', supabaseUserId);
@@ -56,7 +63,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('User state updated successfully');
       
     } catch (error) {
-      console.error('Error in updateUserState:', error);
+      console.error('Detailed error in updateUserState:', {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     } finally {
       console.log('=== Update User State End ===');

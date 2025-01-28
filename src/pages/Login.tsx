@@ -26,6 +26,8 @@ const Login = () => {
       await login(email, password);
       
       console.log('Login function completed, waiting for user state update');
+      console.log('Current user state before delay:', user);
+      
       // Add a longer delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 2000));
       
