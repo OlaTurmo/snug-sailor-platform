@@ -91,6 +91,14 @@ export const Navbar = () => {
                       Økonomi
                     </Link>
                   </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link
+                      to="/boregnskap"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
+                    >
+                      Boregnskap
+                    </Link>
+                  </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
 
@@ -176,6 +184,12 @@ export const Navbar = () => {
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 >
                   Økonomi
+                </Link>
+                <Link
+                  to="/boregnskap"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                >
+                  Boregnskap
                 </Link>
                 <Button
                   onClick={() => logout()}
