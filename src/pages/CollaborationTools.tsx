@@ -87,13 +87,13 @@ const CollaborationTools = () => {
 
       setNewMessage("");
       toast({
-        title: "Message sent",
-        description: "Your message has been sent successfully.",
+        title: "Melding sendt",
+        description: "Meldingen din har blitt sendt.",
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to send message. Please try again.",
+        title: "Feil",
+        description: "Kunne ikke sende melding. Vennligst prøv igjen.",
         variant: "destructive",
       });
     }
@@ -107,15 +107,15 @@ const CollaborationTools = () => {
 
         <Tabs defaultValue="messages" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-            <TabsTrigger value="activity">Activity Log</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
+            <TabsTrigger value="messages">Meldinger</TabsTrigger>
+            <TabsTrigger value="activity">Aktivitetslogg</TabsTrigger>
+            <TabsTrigger value="users">Brukerhåndtering</TabsTrigger>
           </TabsList>
 
           <TabsContent value="messages">
             <Card>
               <CardHeader>
-                <CardTitle>Messages</CardTitle>
+                <CardTitle>Meldinger</CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px] mb-4">
@@ -159,7 +159,7 @@ const CollaborationTools = () => {
                               {message.content}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(message.created_at).toLocaleString()}
+                              {new Date(message.created_at).toLocaleString('no-NO')}
                             </p>
                           </div>
                         </div>
@@ -171,7 +171,7 @@ const CollaborationTools = () => {
                   <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
+                    placeholder="Skriv din melding..."
                     className="flex-1"
                   />
                   <Button type="submit">
@@ -185,7 +185,7 @@ const CollaborationTools = () => {
           <TabsContent value="activity">
             <Card>
               <CardHeader>
-                <CardTitle>Activity Log</CardTitle>
+                <CardTitle>Aktivitetslogg</CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px]">
@@ -212,7 +212,7 @@ const CollaborationTools = () => {
                                 {log.resource_type}
                               </Badge>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(log.created_at).toLocaleString()}
+                                {new Date(log.created_at).toLocaleString('no-NO')}
                               </p>
                             </div>
                           </div>
@@ -229,16 +229,16 @@ const CollaborationTools = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex justify-between items-center">
-                  <span>User Management</span>
+                  <span>Brukerhåndtering</span>
                   <Button>
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Invite User
+                    Inviter Bruker
                   </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  User management functionality will be implemented soon.
+                  Brukerhåndteringsfunksjonalitet vil bli implementert snart.
                 </p>
               </CardContent>
             </Card>
