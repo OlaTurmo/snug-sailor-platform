@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const updateUserState = async (supabaseUserId: string) => {
+    console.log('=== Update User State Start ===');
     console.log('Fetching user profile for ID:', supabaseUserId);
     
     try {
@@ -57,6 +58,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error('Error in updateUserState:', error);
       throw error;
+    } finally {
+      console.log('=== Update User State End ===');
     }
   };
 

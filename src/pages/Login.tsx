@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
@@ -17,29 +17,38 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted, starting login process');
+    console.log('=== Login Flow Start ===');
+    console.log('Form submitted with email:', email);
     setIsLoading(true);
     
     try {
-      console.log('Attempting login with email:', email);
+      console.log('Calling login function...');
       await login(email, password);
       
-      // Add a small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Login function completed, waiting for user state update');
+      // Add a longer delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('Login completed, checking user state:', user);
+      console.log('Delay completed, current user state:', user);
       
       if (user) {
-        console.log('User state confirmed, attempting navigation to /oversikt');
+        console.log('User state is valid:', {
+          id: user.id,
+          email: user.email,
+          role: user.role
+        });
+        
+        console.log('Showing success toast notification');
         toast({
           title: "Innlogget",
           description: "Du er nå logget inn.",
         });
-        console.log('Toast notification shown, executing navigation');
+        
+        console.log('Attempting navigation to /oversikt');
         navigate("/oversikt", { replace: true });
-        console.log('Navigation executed');
+        console.log('Navigation command executed');
       } else {
-        console.log('User state not set after login and delay');
+        console.log('User state is null after login and delay');
         toast({
           title: "Feil ved innlogging",
           description: "Kunne ikke hente brukerprofil. Prøv igjen.",
@@ -47,14 +56,14 @@ const Login = () => {
         });
       }
     } catch (error) {
-      console.error('Login error in component:', error);
+      console.error('Login error:', error);
       toast({
         title: "Feil ved innlogging",
         description: "Vennligst sjekk brukernavn og passord.",
         variant: "destructive",
       });
     } finally {
-      console.log('Login attempt completed, resetting loading state');
+      console.log('=== Login Flow End ===');
       setIsLoading(false);
     }
   };
