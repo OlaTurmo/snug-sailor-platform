@@ -13,6 +13,9 @@ import TaskManagement from "./pages/TaskManagement";
 import DocumentManagement from "./pages/DocumentManagement";
 import AssetsLiabilities from "./pages/AssetsLiabilities";
 import CollaborationTools from "./pages/CollaborationTools";
+import HowItWorks from "./pages/HowItWorks";
+import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +35,9 @@ const App = () => (
             <Route path="/documents" element={<DocumentManagement />} />
             <Route path="/finance" element={<AssetsLiabilities />} />
             <Route path="/collaboration" element={<CollaborationTools />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
