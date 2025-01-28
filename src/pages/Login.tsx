@@ -25,19 +25,21 @@ const Login = () => {
       await login(email, password);
       
       // Add a small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       console.log('Login completed, checking user state:', user);
       
       if (user) {
-        console.log('User state confirmed, navigating to /oversikt');
+        console.log('User state confirmed, attempting navigation to /oversikt');
         toast({
           title: "Innlogget",
           description: "Du er nå logget inn.",
         });
+        console.log('Toast notification shown, executing navigation');
         navigate("/oversikt", { replace: true });
+        console.log('Navigation executed');
       } else {
-        console.log('User state not set after login');
+        console.log('User state not set after login and delay');
         toast({
           title: "Feil ved innlogging",
           description: "Kunne ikke hente brukerprofil. Prøv igjen.",
