@@ -2,6 +2,7 @@ export type AssetType = 'property' | 'vehicle' | 'bank_account' | 'stock' | 'val
 export type LiabilityType = 'debt' | 'tax' | 'bill';
 export type AssetStatus = 'active' | 'sold' | 'transferred';
 export type LiabilityStatus = 'pending' | 'paid' | 'disputed';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Asset {
   id: string;
@@ -43,6 +44,9 @@ export interface FinanceTransaction {
   created_by?: string;
   created_at?: string;
   updated_at?: string;
+  approval_status: ApprovalStatus;
+  approved_by?: string;
+  approved_at?: string;
 }
 
 export interface FinanceSummary {
