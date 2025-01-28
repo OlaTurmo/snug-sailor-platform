@@ -103,53 +103,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      console.log('Starting login process...', { email });
-      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    console.log('Starting login process...', { email });
+    
+    const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (signInError) {
-        console.error('Sign in error:', signInError);
-        throw signInError;
-      }
-
-      if (!authUser) {
-        console.error('No user returned after login');
-        throw new Error('No user returned after login');
-      }
-
-      console.log('Supabase auth successful, fetching profile...');
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        throw profileError;
-      }
-
-      console.log('Profile fetched successfully:', profile);
-
-      setUser({
-        id: authUser.id,
-        email: authUser.email!,
-        name: profile.name,
-        role: profile.role || 'responsible_heir',
-        permissions: profile.permissions || ['full_edit'],
-        createdAt: new Date(profile.created_at),
-        updatedAt: new Date(profile.updated_at),
-      });
-
-      console.log('Login process completed successfully');
-    } catch (error) {
-      console.error('Login process failed:', error);
-      throw error;
+    if (signInError) {
+      console.error('Sign in error:', signInError);
+      throw signInError;
     }
+
+    if (!authUser) {
+      console.error('No user returned after login');
+      throw new Error('No user returned after login');
+    }
+
+    console.log('Supabase auth successful, fetching profile...');
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      throw profileError;
+    }
+
+    console.log('Profile fetched successfully:', profile);
+
+    const userData = {
+      id: authUser.id,
+      email: authUser.email!,
+      name: profile.name,
+      role: profile.role || 'responsible_heir',
+      permissions: profile.permissions || ['full_edit'],
+      createdAt: new Date(profile.created_at),
+      updatedAt: new Date(profile.updated_at),
+    };
+
+    setUser(userData);
+    console.log('Login process completed successfully');
   };
 
   const logout = async () => {

@@ -20,7 +20,7 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login with email:', email);
+      console.log('Starting login attempt...');
       await login(email, password);
       console.log('Login successful, navigating to oversikt');
       toast({
@@ -29,7 +29,7 @@ const Login = () => {
       });
       navigate("/oversikt");
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error in component:', error);
       toast({
         title: "Feil ved innlogging",
         description: "Vennligst sjekk brukernavn og passord.",
