@@ -128,10 +128,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log('User signed up successfully:', authData.user.id);
 
-      // Wait a moment for the trigger to create the profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Create profile manually if trigger hasn't done it yet
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
 
-      // Verify profile creation
+      if (checkError || !existingProfile) {
+        console.log('Profile not found, creating manually...');
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: authData.user.id,
+              name,
+              email,
+              role: 'responsible_heir',
+              permissions: ['full_edit']
+            }
+          ]);
+
+        if (insertError) {
+          console.error('Manual profile creation error:', insertError);
+          throw insertError;
+        }
+      }
+
+      // Fetch the profile after ensuring it exists
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -139,7 +163,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
 
       if (profileError) {
-        console.error('Profile verification error:', profileError);
+        console.error('Profile fetch error:', profileError);
         throw profileError;
       }
 
