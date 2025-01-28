@@ -9,6 +9,8 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Oversikt from "./pages/Oversikt";
+import TaskManagement from "./pages/TaskManagement";
+import DocumentManagement from "./pages/DocumentManagement";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,8 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/oversikt" element={<Oversikt />} />
+            <Route path="/tasks" element={<TaskManagement />} />
+            <Route path="/documents" element={<DocumentManagement />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
