@@ -179,96 +179,95 @@ const TaskManagement = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="container mx-auto px-4 pt-24">
-      <h1 className="text-3xl font-bold mb-8">Task Management</h1>
+        <h1 className="text-3xl font-bold mb-8">Task Management</h1>
 
-      <form onSubmit={handleCreateTask} className="mb-8 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            placeholder="Task title"
-            value={newTask.title}
-            onChange={(e) =>
-              setNewTask({ ...newTask, title: e.target.value })
-            }
-            required
-          />
-          <Input
-            placeholder="Description"
-            value={newTask.description}
-            onChange={(e) =>
-              setNewTask({ ...newTask, description: e.target.value })
-            }
-          />
-          <Input
-            type="datetime-local"
-            value={newTask.deadline}
-            onChange={(e) =>
-              setNewTask({ ...newTask, deadline: e.target.value })
-            }
-            required
-          />
-        </div>
-        <Button 
-          type="submit" 
-          className="w-full md:w-auto"
-          disabled={createTaskMutation.isPending || !user?.id}
-        >
-          {createTaskMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <PlusCircle className="mr-2" />
-          )}
-          Create Task
-        </Button>
-      </form>
+        <form onSubmit={handleCreateTask} className="mb-8 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              placeholder="Task title"
+              value={newTask.title}
+              onChange={(e) =>
+                setNewTask({ ...newTask, title: e.target.value })
+              }
+              required
+            />
+            <Input
+              placeholder="Description"
+              value={newTask.description}
+              onChange={(e) =>
+                setNewTask({ ...newTask, description: e.target.value })
+              }
+            />
+            <Input
+              type="datetime-local"
+              value={newTask.deadline}
+              onChange={(e) =>
+                setNewTask({ ...newTask, deadline: e.target.value })
+              }
+              required
+            />
+          </div>
+          <Button 
+            type="submit" 
+            className="w-full md:w-auto"
+            disabled={createTaskMutation.isPending || !user?.id}
+          >
+            {createTaskMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <PlusCircle className="mr-2" />
+            )}
+            Create Task
+          </Button>
+        </form>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Deadline</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tasks?.map((task) => (
-            <TableRow key={task.id}>
-              <TableCell>{task.title}</TableCell>
-              <TableCell>{task.description}</TableCell>
-              <TableCell>{task.status}</TableCell>
-              <TableCell>
-                {task.deadline ? new Date(task.deadline).toLocaleString() : 'No deadline'}
-              </TableCell>
-              <TableCell>
-                <select
-                  value={task.status}
-                  onChange={(e) =>
-                    updateTaskStatus.mutate({
-                      taskId: task.id,
-                      status: e.target.value,
-                    })
-                  }
-                  className="border rounded p-1"
-                  disabled={updateTaskStatus.isPending}
-                >
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </TableCell>
-            </TableRow>
-          ))}
-          {(!tasks || tasks.length === 0) && (
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
-                No tasks found. Create your first task above.
-              </TableCell>
+              <TableHead>Title</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Deadline</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {tasks?.map((task) => (
+              <TableRow key={task.id}>
+                <TableCell>{task.title}</TableCell>
+                <TableCell>{task.description}</TableCell>
+                <TableCell>{task.status}</TableCell>
+                <TableCell>
+                  {task.deadline ? new Date(task.deadline).toLocaleString() : 'No deadline'}
+                </TableCell>
+                <TableCell>
+                  <select
+                    value={task.status}
+                    onChange={(e) =>
+                      updateTaskStatus.mutate({
+                        taskId: task.id,
+                        status: e.target.value,
+                      })
+                    }
+                    className="border rounded p-1"
+                    disabled={updateTaskStatus.isPending}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </TableCell>
+              </TableRow>
+            ))}
+            {(!tasks || tasks.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-4">
+                  No tasks found. Create your first task above.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </main>
     </div>
   );
