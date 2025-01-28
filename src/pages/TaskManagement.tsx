@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Loader2 } from "lucide-react";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 
 interface Task {
   id: string;
@@ -25,6 +26,7 @@ interface Task {
 }
 
 const TaskManagement = () => {
+  useProtectedRoute(); // Add protected route hook
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newTask, setNewTask] = useState({
@@ -34,23 +36,40 @@ const TaskManagement = () => {
     due_date: "",
   });
 
-  const { data: tasks, isLoading } = useQuery({
+  const { data: tasks, isLoading, error } = useQuery({
     queryKey: ["tasks"],
     queryFn: async () => {
+      console.log('Fetching tasks...');
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
+      }
+      
+      console.log('Tasks fetched successfully:', data);
       return data as Task[];
     },
   });
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: Omit<Task, "id">) => {
-      const { data, error } = await supabase.from("tasks").insert([taskData]);
-      if (error) throw error;
+      console.log('Creating new task:', taskData);
+      const { data, error } = await supabase
+        .from("tasks")
+        .insert([taskData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating task:', error);
+        throw error;
+      }
+
+      console.log('Task created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -61,7 +80,8 @@ const TaskManagement = () => {
       });
       setNewTask({ title: "", description: "", category: "", due_date: "" });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error('Task creation error:', error);
       toast({
         title: "Error creating task",
         description: error.message,
@@ -78,11 +98,20 @@ const TaskManagement = () => {
       taskId: string;
       status: Task["status"];
     }) => {
+      console.log('Updating task status:', { taskId, status });
       const { data, error } = await supabase
         .from("tasks")
         .update({ status })
-        .eq("id", taskId);
-      if (error) throw error;
+        .eq("id", taskId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating task:', error);
+        throw error;
+      }
+
+      console.log('Task updated successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -90,6 +119,14 @@ const TaskManagement = () => {
       toast({
         title: "Task updated",
         description: "The task status has been updated.",
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Task update error:', error);
+      toast({
+        title: "Error updating task",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -102,6 +139,15 @@ const TaskManagement = () => {
       assigned_to: "", // You'll need to implement user selection
     } as Omit<Task, "id">);
   };
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Tasks</h1>
+        <p className="text-gray-600">{error.message}</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -146,8 +192,16 @@ const TaskManagement = () => {
             }
           />
         </div>
-        <Button type="submit" className="w-full md:w-auto">
-          <PlusCircle className="mr-2" />
+        <Button 
+          type="submit" 
+          className="w-full md:w-auto"
+          disabled={createTaskMutation.isPending}
+        >
+          {createTaskMutation.isPending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <PlusCircle className="mr-2" />
+          )}
           Create Task
         </Button>
       </form>
@@ -181,6 +235,7 @@ const TaskManagement = () => {
                     })
                   }
                   className="border rounded p-1"
+                  disabled={updateTaskStatus.isPending}
                 >
                   <option value="pending">Pending</option>
                   <option value="in_progress">In Progress</option>
@@ -189,6 +244,13 @@ const TaskManagement = () => {
               </TableCell>
             </TableRow>
           ))}
+          {tasks?.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-4">
+                No tasks found. Create your first task above.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>

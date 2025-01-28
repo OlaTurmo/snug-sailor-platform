@@ -11,109 +11,124 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Download, Loader2 } from "lucide-react";
+import { Upload, Loader2, FileText, Trash2 } from "lucide-react";
+import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 
 interface Document {
   id: string;
   name: string;
-  description: string;
-  category: string;
-  file_path: string;
-  file_type: string;
   size: number;
+  type: string;
+  url: string;
   created_at: string;
+  user_id: string;
 }
 
 const DocumentManagement = () => {
+  useProtectedRoute();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [uploading, setUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const { data: documents, isLoading } = useQuery({
+  const { data: documents, isLoading, error } = useQuery({
     queryKey: ["documents"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("documents")
-        .select("*")
-        .order("created_at", { ascending: false });
+      console.log('Fetching documents...');
+      const { data: files, error } = await supabase
+        .storage
+        .from('documents')
+        .list();
 
-      if (error) throw error;
-      return data as Document[];
+      if (error) {
+        console.error('Error fetching documents:', error);
+        throw error;
+      }
+
+      console.log('Documents fetched successfully:', files);
+      return files.map(file => ({
+        id: file.id,
+        name: file.name,
+        size: file.metadata?.size || 0,
+        type: file.metadata?.mimetype || 'unknown',
+        created_at: file.created_at,
+        url: supabase.storage.from('documents').getPublicUrl(file.name).data.publicUrl
+      }));
     },
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
     try {
-      setUploading(true);
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      // Upload file to Supabase Storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `documents/${fileName}`;
-
+      console.log('Uploading file:', file.name);
       const { error: uploadError } = await supabase.storage
-        .from("documents")
-        .upload(filePath, file);
+        .from('documents')
+        .upload(`${Date.now()}-${file.name}`, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Error uploading file:', uploadError);
+        throw uploadError;
+      }
 
-      // Create document record in the database
-      const { error: dbError } = await supabase.from("documents").insert([
-        {
-          name: file.name,
-          description: "",
-          category: "general", // You might want to make this selectable
-          file_path: filePath,
-          file_type: file.type,
-          size: file.size,
-        },
-      ]);
-
-      if (dbError) throw dbError;
-
+      console.log('File uploaded successfully');
       queryClient.invalidateQueries({ queryKey: ["documents"] });
       toast({
         title: "File uploaded successfully",
-        description: "Your document has been uploaded and saved.",
+        description: `${file.name} has been uploaded.`,
       });
-    } catch (error: any) {
+    } catch (error) {
+      console.error('File upload error:', error);
       toast({
         title: "Error uploading file",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred while uploading the file",
         variant: "destructive",
       });
     } finally {
-      setUploading(false);
+      setIsUploading(false);
     }
   };
 
-  const handleDownload = async (document: Document) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .download(document.file_path);
+  const deleteDocument = useMutation({
+    mutationFn: async (fileName: string) => {
+      console.log('Deleting document:', fileName);
+      const { error } = await supabase.storage
+        .from('documents')
+        .remove([fileName]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting document:', error);
+        throw error;
+      }
 
-      // Create a download link
-      const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = document.name;
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
+      console.log('Document deleted successfully');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
       toast({
-        title: "Error downloading file",
+        title: "Document deleted",
+        description: "The document has been removed.",
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Document deletion error:', error);
+      toast({
+        title: "Error deleting document",
         description: error.message,
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Documents</h1>
+        <p className="text-gray-600">{error.message}</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -129,21 +144,23 @@ const DocumentManagement = () => {
 
       <div className="mb-8">
         <Button
-          disabled={uploading}
-          onClick={() => document.getElementById("fileInput")?.click()}
+          onClick={() => document.getElementById('file-upload')?.click()}
+          disabled={isUploading}
+          className="w-full md:w-auto"
         >
-          {uploading ? (
-            <Loader2 className="animate-spin mr-2" />
+          {isUploading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <Upload className="mr-2" />
+            <Upload className="mr-2 h-4 w-4" />
           )}
           Upload Document
         </Button>
         <input
           type="file"
-          id="fileInput"
+          id="file-upload"
           className="hidden"
           onChange={handleFileUpload}
+          accept=".pdf,.doc,.docx,.txt"
         />
       </div>
 
@@ -151,7 +168,7 @@ const DocumentManagement = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Category</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Size</TableHead>
             <TableHead>Uploaded</TableHead>
             <TableHead>Actions</TableHead>
@@ -160,26 +177,43 @@ const DocumentManagement = () => {
         <TableBody>
           {documents?.map((doc) => (
             <TableRow key={doc.id}>
-              <TableCell className="flex items-center">
-                <FileText className="mr-2" />
-                {doc.name}
+              <TableCell className="font-medium">
+                <div className="flex items-center">
+                  <FileText className="mr-2 h-4 w-4" />
+                  {doc.name}
+                </div>
               </TableCell>
-              <TableCell>{doc.category}</TableCell>
-              <TableCell>{(doc.size / 1024 / 1024).toFixed(2)} MB</TableCell>
+              <TableCell>{doc.type}</TableCell>
+              <TableCell>{Math.round(doc.size / 1024)} KB</TableCell>
+              <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
               <TableCell>
-                {new Date(doc.created_at).toLocaleDateString()}
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDownload(doc)}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(doc.url, '_blank')}
+                  >
+                    View
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteDocument.mutate(doc.name)}
+                    disabled={deleteDocument.isPending}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}
+          {documents?.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-4">
+                No documents found. Upload your first document above.
+              </TableCell>
+            </TableRow>
+          )}
         </TableBody>
       </Table>
     </div>
