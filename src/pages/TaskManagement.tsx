@@ -14,6 +14,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Task {
   id: string;
@@ -29,6 +30,7 @@ interface Task {
 
 const TaskManagement = () => {
   useProtectedRoute();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newTask, setNewTask] = useState({
@@ -44,6 +46,7 @@ const TaskManagement = () => {
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
+        .or(`created_by.eq.${user?.id},assigned_to.eq.${user?.id}`)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -54,6 +57,7 @@ const TaskManagement = () => {
       console.log('Tasks fetched successfully:', data);
       return data as Task[];
     },
+    enabled: !!user?.id,
   });
 
   const createTaskMutation = useMutation({
@@ -64,7 +68,8 @@ const TaskManagement = () => {
         .insert([{ 
           ...taskData,
           status: 'pending',
-          created_by: (await supabase.auth.getUser()).data.user?.id
+          created_by: user?.id,
+          assigned_to: user?.id // Initially assign to self
         }])
         .select()
         .single();
@@ -138,6 +143,14 @@ const TaskManagement = () => {
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user?.id) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create tasks.",
+        variant: "destructive",
+      });
+      return;
+    }
     createTaskMutation.mutate({
       ...newTask,
       deadline: new Date(newTask.deadline).toISOString(),
@@ -194,7 +207,7 @@ const TaskManagement = () => {
         <Button 
           type="submit" 
           className="w-full md:w-auto"
-          disabled={createTaskMutation.isPending}
+          disabled={createTaskMutation.isPending || !user?.id}
         >
           {createTaskMutation.isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

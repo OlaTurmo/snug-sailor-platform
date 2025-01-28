@@ -13,19 +13,22 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Loader2, FileText, Trash2 } from "lucide-react";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Document {
   id: string;
   name: string;
-  size: number;
-  type: string;
-  url: string;
+  description: string | null;
+  file_path: string;
+  file_type: string;
+  uploaded_by: string;
   created_at: string;
-  user_id: string;
+  updated_at: string;
 }
 
 const DocumentManagement = () => {
   useProtectedRoute();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
@@ -34,42 +37,54 @@ const DocumentManagement = () => {
     queryKey: ["documents"],
     queryFn: async () => {
       console.log('Fetching documents...');
-      const { data: files, error } = await supabase
-        .storage
+      const { data: docs, error: docsError } = await supabase
         .from('documents')
-        .list();
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching documents:', error);
-        throw error;
+      if (docsError) {
+        console.error('Error fetching documents:', docsError);
+        throw docsError;
       }
 
-      console.log('Documents fetched successfully:', files);
-      return files.map(file => ({
-        id: file.id,
-        name: file.name,
-        size: file.metadata?.size || 0,
-        type: file.metadata?.mimetype || 'unknown',
-        created_at: file.created_at,
-        url: supabase.storage.from('documents').getPublicUrl(file.name).data.publicUrl
-      }));
+      console.log('Documents fetched successfully:', docs);
+      return docs as Document[];
     },
+    enabled: !!user?.id,
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !user?.id) return;
 
     setIsUploading(true);
     try {
       console.log('Uploading file:', file.name);
+      
+      // First upload to storage
+      const fileName = `${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('documents')
-        .upload(`${Date.now()}-${file.name}`, file);
+        .upload(fileName, file);
 
       if (uploadError) {
-        console.error('Error uploading file:', uploadError);
+        console.error('Error uploading to storage:', uploadError);
         throw uploadError;
+      }
+
+      // Then create database record
+      const { error: dbError } = await supabase
+        .from('documents')
+        .insert([{
+          name: file.name,
+          file_path: fileName,
+          file_type: file.type,
+          uploaded_by: user.id
+        }]);
+
+      if (dbError) {
+        console.error('Error creating document record:', dbError);
+        throw dbError;
       }
 
       console.log('File uploaded successfully');
@@ -91,15 +106,28 @@ const DocumentManagement = () => {
   };
 
   const deleteDocument = useMutation({
-    mutationFn: async (fileName: string) => {
-      console.log('Deleting document:', fileName);
-      const { error } = await supabase.storage
+    mutationFn: async (document: Document) => {
+      console.log('Deleting document:', document);
+      
+      // First delete from storage
+      const { error: storageError } = await supabase.storage
         .from('documents')
-        .remove([fileName]);
+        .remove([document.file_path]);
 
-      if (error) {
-        console.error('Error deleting document:', error);
-        throw error;
+      if (storageError) {
+        console.error('Error deleting from storage:', storageError);
+        throw storageError;
+      }
+
+      // Then delete database record
+      const { error: dbError } = await supabase
+        .from('documents')
+        .delete()
+        .eq('id', document.id);
+
+      if (dbError) {
+        console.error('Error deleting document record:', dbError);
+        throw dbError;
       }
 
       console.log('Document deleted successfully');
@@ -145,7 +173,7 @@ const DocumentManagement = () => {
       <div className="mb-8">
         <Button
           onClick={() => document.getElementById('file-upload')?.click()}
-          disabled={isUploading}
+          disabled={isUploading || !user?.id}
           className="w-full md:w-auto"
         >
           {isUploading ? (
@@ -169,7 +197,6 @@ const DocumentManagement = () => {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Type</TableHead>
-            <TableHead>Size</TableHead>
             <TableHead>Uploaded</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
@@ -183,33 +210,39 @@ const DocumentManagement = () => {
                   {doc.name}
                 </div>
               </TableCell>
-              <TableCell>{doc.type}</TableCell>
-              <TableCell>{Math.round(doc.size / 1024)} KB</TableCell>
+              <TableCell>{doc.file_type}</TableCell>
               <TableCell>{new Date(doc.created_at).toLocaleDateString()}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(doc.url, '_blank')}
+                    onClick={() => {
+                      const url = supabase.storage
+                        .from('documents')
+                        .getPublicUrl(doc.file_path).data.publicUrl;
+                      window.open(url, '_blank');
+                    }}
                   >
                     View
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => deleteDocument.mutate(doc.name)}
-                    disabled={deleteDocument.isPending}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {doc.uploaded_by === user?.id && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => deleteDocument.mutate(doc)}
+                      disabled={deleteDocument.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
           ))}
-          {documents?.length === 0 && (
+          {(!documents || documents.length === 0) && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={4} className="text-center py-4">
                 No documents found. Upload your first document above.
               </TableCell>
             </TableRow>
