@@ -218,7 +218,7 @@ export default function Finance() {
   return (
     <div className="container mx-auto p-4 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Financial Management</h1>
+        <h1 className="text-3xl font-bold">Økonomistyring</h1>
         <Select
           value={selectedProject || ''}
           onValueChange={(value) => {
@@ -227,7 +227,7 @@ export default function Finance() {
           }}
         >
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Select project" />
+            <SelectValue placeholder="Velg prosjekt" />
           </SelectTrigger>
           <SelectContent>
             {projects.map((project) => (
@@ -243,32 +243,32 @@ export default function Finance() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle>Total Income</CardTitle>
-            <CardDescription>Approved transactions only</CardDescription>
+            <CardTitle>Total Inntekt</CardTitle>
+            <CardDescription>Kun godkjente transaksjoner</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">
-              ${summary.totalIncome.toLocaleString()}
+              ${summary.totalIncome.toLocaleString('no-NO')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Total Expenses</CardTitle>
-            <CardDescription>Approved transactions only</CardDescription>
+            <CardTitle>Totale Utgifter</CardTitle>
+            <CardDescription>Kun godkjente transaksjoner</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">
-              ${summary.totalExpenses.toLocaleString()}
+              ${summary.totalExpenses.toLocaleString('no-NO')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Net Balance</CardTitle>
-            <CardDescription>Final settlement value</CardDescription>
+            <CardTitle>Netto Balanse</CardTitle>
+            <CardDescription>Endelig oppgjørsverdi</CardDescription>
           </CardHeader>
           <CardContent>
             <p
@@ -276,7 +276,7 @@ export default function Finance() {
                 summary.netBalance >= 0 ? "text-green-600" : "text-red-600"
               }`}
             >
-              ${summary.netBalance.toLocaleString()}
+              ${summary.netBalance.toLocaleString('no-NO')}
             </p>
           </CardContent>
         </Card>
@@ -286,19 +286,19 @@ export default function Finance() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Transactions</CardTitle>
-            <CardDescription>Track all financial transactions</CardDescription>
+            <CardTitle>Transaksjoner</CardTitle>
+            <CardDescription>Spor alle økonomiske transaksjoner</CardDescription>
           </div>
           <Dialog>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2" />
-                Add Transaction
+                Legg til Transaksjon
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Transaction</DialogTitle>
+                <DialogTitle>Legg til Ny Transaksjon</DialogTitle>
               </DialogHeader>
               <form
                 onSubmit={(e) => {
@@ -318,31 +318,31 @@ export default function Finance() {
                   <Label htmlFor="type">Type</Label>
                   <Select name="type" required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Velg type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="income">Income</SelectItem>
-                      <SelectItem value="expense">Expense</SelectItem>
+                      <SelectItem value="income">Inntekt</SelectItem>
+                      <SelectItem value="expense">Utgift</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Kategori</Label>
                   <Select name="category" required>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Velg kategori" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sale">Asset Sale</SelectItem>
-                      <SelectItem value="legal">Legal Fees</SelectItem>
-                      <SelectItem value="tax">Taxes</SelectItem>
-                      <SelectItem value="funeral">Funeral Costs</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="sale">Salg av eiendel</SelectItem>
+                      <SelectItem value="legal">Advokatkostnader</SelectItem>
+                      <SelectItem value="tax">Skatter</SelectItem>
+                      <SelectItem value="funeral">Begravelseskostnader</SelectItem>
+                      <SelectItem value="other">Annet</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="amount">Amount ($)</Label>
+                  <Label htmlFor="amount">Beløp (kr)</Label>
                   <Input
                     id="amount"
                     name="amount"
@@ -353,10 +353,10 @@ export default function Finance() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Beskrivelse</Label>
                   <Textarea id="description" name="description" />
                 </div>
-                <Button type="submit">Add Transaction</Button>
+                <Button type="submit">Legg til Transaksjon</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -371,7 +371,7 @@ export default function Finance() {
                 <div>
                   <h3 className="font-semibold">{transaction.category}</h3>
                   <p className="text-sm text-gray-500">
-                    {new Date(transaction.date).toLocaleDateString()}
+                    {new Date(transaction.date).toLocaleDateString('no-NO')}
                   </p>
                   {transaction.description && (
                     <p className="text-sm">{transaction.description}</p>
@@ -385,7 +385,8 @@ export default function Finance() {
                         : 'secondary'
                     }
                   >
-                    {transaction.approval_status}
+                    {transaction.approval_status === 'approved' ? 'Godkjent' : 
+                     transaction.approval_status === 'rejected' ? 'Avvist' : 'Venter'}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4">
@@ -396,8 +397,8 @@ export default function Finance() {
                         : "text-red-600"
                     }`}
                   >
-                    {transaction.type === "income" ? "+" : "-"}$
-                    {Number(transaction.amount).toLocaleString()}
+                    {transaction.type === "income" ? "+" : "-"}kr
+                    {Number(transaction.amount).toLocaleString('no-NO')}
                   </p>
                   {transaction.approval_status === 'pending' && (
                     <div className="flex gap-2">
