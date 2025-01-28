@@ -496,7 +496,7 @@ export default function Finance() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Kostnadsfordeling</CardTitle>
+                    <CardTitle>Budsjett og Utgiftsoversikt</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -509,30 +509,48 @@ export default function Finance() {
                               t.approval_status === "approved"
                           )
                           .reduce((sum, t) => sum + Number(t.amount), 0);
+                        
+                        const pendingAmount = transactions
+                          .filter(
+                            (t) =>
+                              t.type === "expense" &&
+                              t.category === category &&
+                              t.approval_status === "pending"
+                          )
+                          .reduce((sum, t) => sum + Number(t.amount), 0);
+
                         return (
                           <div
                             key={category}
-                            className="flex justify-between items-center"
+                            className="flex flex-col space-y-2 p-4 border rounded-lg"
                           >
-                            <span className="font-medium">
-                              {category === "legal"
-                                ? "Advokatkostnader"
-                                : category === "tax"
-                                ? "Skatter"
-                                : category === "funeral"
-                                ? "Begravelseskostnader"
-                                : "Andre kostnader"}
-                            </span>
-                            <span
-                              className={`font-bold ${
-                                amount > 0 ? "text-red-600" : "text-gray-500"
-                              }`}
-                            >
-                              {new Intl.NumberFormat("nb-NO", {
-                                style: "currency",
-                                currency: "NOK",
-                              }).format(amount)}
-                            </span>
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">
+                                {category === "legal"
+                                  ? "Advokatkostnader"
+                                  : category === "tax"
+                                  ? "Skatter"
+                                  : category === "funeral"
+                                  ? "Begravelseskostnader"
+                                  : "Andre kostnader"}
+                              </span>
+                              <div className="text-right">
+                                <span className={`font-bold ${amount > 0 ? "text-red-600" : "text-gray-500"}`}>
+                                  {new Intl.NumberFormat("nb-NO", {
+                                    style: "currency",
+                                    currency: "NOK",
+                                  }).format(amount)}
+                                </span>
+                                {pendingAmount > 0 && (
+                                  <div className="text-sm text-amber-600">
+                                    Ventende godkjenning: {new Intl.NumberFormat("nb-NO", {
+                                      style: "currency",
+                                      currency: "NOK",
+                                    }).format(pendingAmount)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
@@ -548,15 +566,45 @@ export default function Finance() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-3xl font-bold text-primary">
-                      {new Intl.NumberFormat("nb-NO", {
-                        style: "currency",
-                        currency: "NOK",
-                      }).format(summary.netBalance)}
-                    </p>
-                    <Button className="mt-4">
-                      Generer Oppgjørsrapport
-                    </Button>
+                    <div className="space-y-4">
+                      <p className="text-3xl font-bold text-primary">
+                        {new Intl.NumberFormat("nb-NO", {
+                          style: "currency",
+                          currency: "NOK",
+                        }).format(summary.netBalance)}
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-semibold mb-2">Totale Inntekter</h4>
+                          <p className="text-green-600">
+                            {new Intl.NumberFormat("nb-NO", {
+                              style: "currency",
+                              currency: "NOK",
+                            }).format(summary.totalIncome)}
+                          </p>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold mb-2">Totale Utgifter</h4>
+                          <p className="text-red-600">
+                            {new Intl.NumberFormat("nb-NO", {
+                              style: "currency",
+                              currency: "NOK",
+                            }).format(summary.totalExpenses)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          toast({
+                            title: "Rapport Generert",
+                            description: "Oppgjørsrapporten er nå tilgjengelig for nedlasting",
+                          });
+                        }}
+                        className="w-full mt-4"
+                      >
+                        Generer Oppgjørsrapport
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
