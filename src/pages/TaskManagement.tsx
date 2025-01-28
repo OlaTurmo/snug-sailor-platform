@@ -160,17 +160,23 @@ const TaskManagement = () => {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Tasks</h1>
-        <p className="text-gray-600">{(error as Error).message}</p>
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex flex-col items-center justify-center h-screen">
+          <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Tasks</h1>
+          <p className="text-gray-600">{(error as Error).message}</p>
+        </div>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <Loader2 className="animate-spin h-8 w-8" />
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="flex items-center justify-center h-screen">
+          <Loader2 className="animate-spin h-8 w-8" />
+        </div>
       </div>
     );
   }
