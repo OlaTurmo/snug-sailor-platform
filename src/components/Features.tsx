@@ -1,4 +1,4 @@
-import { CheckSquare, Users, FolderOpen, Scale } from "lucide-react";
+import { CheckSquare, Users, FolderOpen, Scale, Calculator } from "lucide-react";
 
 const features = [
   {
@@ -21,6 +21,11 @@ const features = [
     title: "Arvefordelingsverktøy",
     description: "Rettferdig fordeling av arv på en smidig måte.",
   },
+  {
+    icon: Calculator,
+    title: "Regnskap for boet",
+    description: "Hold oversikt over boets økonomi og utgifter.",
+  },
 ];
 
 export const Features = () => {
@@ -28,7 +33,7 @@ export const Features = () => {
     <section id="features" className="py-20 bg-[#F5F5DC]/10">
       <div className="container mx-auto px-4">
         <h2 className="text-4xl font-bold text-center mb-12">Hvorfor velge Arv.ing?</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-8">
           {features.map((feature, index) => (
             <div
               key={index}
