@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 import Oversikt from "./pages/Oversikt";
 import TaskManagement from "./pages/TaskManagement";
 import DocumentManagement from "./pages/DocumentManagement";
+import AssetsLiabilities from "./pages/AssetsLiabilities";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/oversikt" element={<Oversikt />} />
             <Route path="/tasks" element={<TaskManagement />} />
             <Route path="/documents" element={<DocumentManagement />} />
+            <Route path="/finance" element={<AssetsLiabilities />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
