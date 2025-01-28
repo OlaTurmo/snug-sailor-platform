@@ -21,19 +21,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const updateUserState = async (supabaseUserId: string) => {
     console.log('Fetching user profile for ID:', supabaseUserId);
     
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', supabaseUserId)
-      .single();
+    try {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabaseUserId)
+        .single();
 
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
-      return;
-    }
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
+      }
 
-    if (profile) {
-      console.log('Setting user profile:', profile);
+      if (!profile) {
+        console.error('No profile found for user ID:', supabaseUserId);
+        throw new Error('No profile found');
+      }
+
+      console.log('Profile fetched successfully:', profile);
+      
       const userData: User = {
         id: supabaseUserId,
         email: profile.email,
@@ -43,8 +49,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         createdAt: new Date(profile.created_at),
         updatedAt: new Date(profile.updated_at),
       };
+      
+      console.log('Setting user state with:', userData);
       setUser(userData);
-      console.log('User state updated:', userData);
+      console.log('User state updated successfully');
+      
+    } catch (error) {
+      console.error('Error in updateUserState:', error);
+      throw error;
     }
   };
 
@@ -53,6 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         console.log('Checking session...');
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error('Session check error:', error);
           return;
@@ -61,6 +74,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (session?.user) {
           console.log('Found existing session:', session.user.id);
           await updateUserState(session.user.id);
+        } else {
+          console.log('No active session found');
         }
       } catch (error) {
         console.error('Error checking session:', error);
@@ -72,12 +87,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
+      console.log('Auth state change event:', event, session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
-        await updateUserState(session.user.id);
+        console.log('Processing SIGNED_IN event for user:', session.user.id);
+        try {
+          await updateUserState(session.user.id);
+          console.log('User state updated after sign in');
+        } catch (error) {
+          console.error('Error updating user state after sign in:', error);
+        }
       } else if (event === 'SIGNED_OUT') {
-        console.log('User signed out');
+        console.log('User signed out, clearing user state');
         setUser(null);
       }
     });
@@ -90,23 +111,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     console.log('Starting login process...', { email });
     
-    const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (signInError) {
-      console.error('Sign in error:', signInError);
-      throw signInError;
+      if (signInError) {
+        console.error('Sign in error:', signInError);
+        throw signInError;
+      }
+
+      if (!authUser) {
+        console.error('No user returned after login');
+        throw new Error('No user returned after login');
+      }
+
+      console.log('Supabase auth successful, waiting for auth state change');
+      
+      // The user state will be updated by the auth state change listener
+      // Adding a small delay to ensure the listener has time to process
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+    } catch (error) {
+      console.error('Login process failed:', error);
+      throw error;
     }
-
-    if (!authUser) {
-      console.error('No user returned after login');
-      throw new Error('No user returned after login');
-    }
-
-    // The user state will be updated by the auth state change listener
-    console.log('Login successful, waiting for auth state change');
   };
 
   const logout = async () => {

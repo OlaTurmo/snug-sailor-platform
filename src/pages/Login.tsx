@@ -11,7 +11,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -23,16 +23,27 @@ const Login = () => {
     try {
       console.log('Attempting login with email:', email);
       await login(email, password);
-      console.log('Login successful, preparing to navigate');
       
-      toast({
-        title: "Innlogget",
-        description: "Du er nå logget inn.",
-      });
+      // Add a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      console.log('Navigating to /oversikt');
-      navigate("/oversikt", { replace: true });
+      console.log('Login completed, checking user state:', user);
       
+      if (user) {
+        console.log('User state confirmed, navigating to /oversikt');
+        toast({
+          title: "Innlogget",
+          description: "Du er nå logget inn.",
+        });
+        navigate("/oversikt", { replace: true });
+      } else {
+        console.log('User state not set after login');
+        toast({
+          title: "Feil ved innlogging",
+          description: "Kunne ikke hente brukerprofil. Prøv igjen.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Login error in component:', error);
       toast({
