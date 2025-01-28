@@ -20,14 +20,19 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      console.log('Starting login attempt...');
+      console.log('Starting login attempt with email:', email);
       await login(email, password);
       console.log('Login successful, navigating to oversikt');
-      toast({
-        title: "Innlogget",
-        description: "Du er nå logget inn.",
-      });
-      navigate("/oversikt");
+      
+      // Force a small delay to ensure state is updated
+      setTimeout(() => {
+        toast({
+          title: "Innlogget",
+          description: "Du er nå logget inn.",
+        });
+        navigate("/oversikt", { replace: true });
+      }, 100);
+      
     } catch (error) {
       console.error('Login error in component:', error);
       toast({

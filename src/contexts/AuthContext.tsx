@@ -145,8 +145,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       updatedAt: new Date(profile.updated_at),
     };
 
+    // Ensure state is updated synchronously
+    await Promise.resolve();
     setUser(userData);
-    console.log('Login process completed successfully');
+    console.log('Login process completed successfully, user state updated:', userData);
   };
 
   const logout = async () => {
