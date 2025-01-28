@@ -12,6 +12,7 @@ import Oversikt from "./pages/Oversikt";
 import TaskManagement from "./pages/TaskManagement";
 import DocumentManagement from "./pages/DocumentManagement";
 import AssetsLiabilities from "./pages/AssetsLiabilities";
+import CollaborationTools from "./pages/CollaborationTools";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/tasks" element={<TaskManagement />} />
             <Route path="/documents" element={<DocumentManagement />} />
             <Route path="/finance" element={<AssetsLiabilities />} />
+            <Route path="/collaboration" element={<CollaborationTools />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
