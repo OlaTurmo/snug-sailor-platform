@@ -89,7 +89,7 @@ export default function Finance() {
       const { data, error } = await supabase
         .from("finance_transactions")
         .select("*")
-        .eq('estate_project_id', projectId)
+        .eq('project_id', projectId)  // Changed from estate_project_id to project_id
         .order("date", { ascending: false });
 
       if (error) {
@@ -133,7 +133,7 @@ export default function Finance() {
         {
           ...data,
           created_by: user?.id,
-          estate_project_id: selectedProject,
+          project_id: selectedProject,  // Changed from estate_project_id to project_id
           approval_status: 'pending'
         },
       ]);
