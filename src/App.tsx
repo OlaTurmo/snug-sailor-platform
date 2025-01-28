@@ -16,6 +16,7 @@ import CollaborationTools from "./pages/CollaborationTools";
 import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
+import Boregnskap from "./pages/Boregnskap";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/tasks" element={<TaskManagement />} />
             <Route path="/documents" element={<DocumentManagement />} />
             <Route path="/finance" element={<AssetsLiabilities />} />
+            <Route path="/boregnskap" element={<Boregnskap />} />
             <Route path="/collaboration" element={<CollaborationTools />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/pricing" element={<Pricing />} />
