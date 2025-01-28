@@ -31,3 +31,22 @@ export interface Liability {
   updated_at?: string;
   metadata?: Record<string, any>;
 }
+
+export interface FinanceTransaction {
+  id: string;
+  estate_project_id: string;
+  type: 'income' | 'expense';
+  category: string;
+  amount: number;
+  description?: string;
+  date: string;
+  created_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FinanceSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  netBalance: number;
+}
