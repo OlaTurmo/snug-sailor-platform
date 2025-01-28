@@ -30,3 +30,12 @@ supabase.auth.onAuthStateChange((event, session) => {
     console.log('Session user:', session.user?.id);
   }
 });
+
+// Test connection
+supabase.auth.getSession().then(({ data, error }) => {
+  if (error) {
+    console.error('Supabase connection error:', error);
+  } else {
+    console.log('Supabase connection successful');
+  }
+});
