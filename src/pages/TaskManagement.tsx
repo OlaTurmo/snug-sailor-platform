@@ -18,22 +18,23 @@ import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 interface Task {
   id: string;
   title: string;
-  description: string;
-  category: string;
-  status: "pending" | "in_progress" | "completed";
-  due_date: string;
-  assigned_to: string;
+  description: string | null;
+  status: string;
+  deadline: string | null;
+  assigned_to: string | null;
+  created_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 const TaskManagement = () => {
-  useProtectedRoute(); // Add protected route hook
+  useProtectedRoute();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    category: "",
-    due_date: "",
+    deadline: "",
   });
 
   const { data: tasks, isLoading, error } = useQuery({
@@ -56,11 +57,15 @@ const TaskManagement = () => {
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: async (taskData: Omit<Task, "id">) => {
+    mutationFn: async (taskData: Partial<Task>) => {
       console.log('Creating new task:', taskData);
       const { data, error } = await supabase
         .from("tasks")
-        .insert([taskData])
+        .insert([{ 
+          ...taskData,
+          status: 'pending',
+          created_by: (await supabase.auth.getUser()).data.user?.id
+        }])
         .select()
         .single();
 
@@ -78,7 +83,7 @@ const TaskManagement = () => {
         title: "Task created successfully",
         description: "The new task has been added to the list.",
       });
-      setNewTask({ title: "", description: "", category: "", due_date: "" });
+      setNewTask({ title: "", description: "", deadline: "" });
     },
     onError: (error: Error) => {
       console.error('Task creation error:', error);
@@ -96,7 +101,7 @@ const TaskManagement = () => {
       status,
     }: {
       taskId: string;
-      status: Task["status"];
+      status: string;
     }) => {
       console.log('Updating task status:', { taskId, status });
       const { data, error } = await supabase
@@ -135,16 +140,15 @@ const TaskManagement = () => {
     e.preventDefault();
     createTaskMutation.mutate({
       ...newTask,
-      status: "pending",
-      assigned_to: "", // You'll need to implement user selection
-    } as Omit<Task, "id">);
+      deadline: new Date(newTask.deadline).toISOString(),
+    });
   };
 
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Tasks</h1>
-        <p className="text-gray-600">{error.message}</p>
+        <p className="text-gray-600">{(error as Error).message}</p>
       </div>
     );
   }
@@ -169,13 +173,7 @@ const TaskManagement = () => {
             onChange={(e) =>
               setNewTask({ ...newTask, title: e.target.value })
             }
-          />
-          <Input
-            placeholder="Category"
-            value={newTask.category}
-            onChange={(e) =>
-              setNewTask({ ...newTask, category: e.target.value })
-            }
+            required
           />
           <Input
             placeholder="Description"
@@ -185,11 +183,12 @@ const TaskManagement = () => {
             }
           />
           <Input
-            type="date"
-            value={newTask.due_date}
+            type="datetime-local"
+            value={newTask.deadline}
             onChange={(e) =>
-              setNewTask({ ...newTask, due_date: e.target.value })
+              setNewTask({ ...newTask, deadline: e.target.value })
             }
+            required
           />
         </div>
         <Button 
@@ -210,9 +209,9 @@ const TaskManagement = () => {
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
-            <TableHead>Category</TableHead>
+            <TableHead>Description</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Due Date</TableHead>
+            <TableHead>Deadline</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -220,10 +219,10 @@ const TaskManagement = () => {
           {tasks?.map((task) => (
             <TableRow key={task.id}>
               <TableCell>{task.title}</TableCell>
-              <TableCell>{task.category}</TableCell>
+              <TableCell>{task.description}</TableCell>
               <TableCell>{task.status}</TableCell>
               <TableCell>
-                {new Date(task.due_date).toLocaleDateString()}
+                {task.deadline ? new Date(task.deadline).toLocaleString() : 'No deadline'}
               </TableCell>
               <TableCell>
                 <select
@@ -231,7 +230,7 @@ const TaskManagement = () => {
                   onChange={(e) =>
                     updateTaskStatus.mutate({
                       taskId: task.id,
-                      status: e.target.value as Task["status"],
+                      status: e.target.value,
                     })
                   }
                   className="border rounded p-1"
@@ -244,7 +243,7 @@ const TaskManagement = () => {
               </TableCell>
             </TableRow>
           ))}
-          {tasks?.length === 0 && (
+          {(!tasks || tasks.length === 0) && (
             <TableRow>
               <TableCell colSpan={5} className="text-center py-4">
                 No tasks found. Create your first task above.
