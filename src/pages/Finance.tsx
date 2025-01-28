@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Check, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export default function Finance() {
   const { user } = useAuth();
@@ -41,25 +42,54 @@ export default function Finance() {
     netBalance: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
     console.log('Finance component mounted, user:', user);
     if (user) {
-      console.log('User is authenticated, fetching transactions for:', user.id);
-      fetchTransactions();
+      console.log('User is authenticated, fetching projects and transactions');
+      fetchProjects();
     } else {
       console.log('No user found, setting loading to false');
       setLoading(false);
     }
   }, [user]);
 
-  const fetchTransactions = async () => {
+  const fetchProjects = async () => {
     try {
-      console.log('Starting transaction fetch...');
+      console.log('Fetching projects...');
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('estate_projects')
+        .select('id, name')
+        .or(`responsible_heir_id.eq.${user?.id},id.in.(select project_id from project_users where user_id = ${user?.id})`);
+
+      if (projectsError) throw projectsError;
+
+      console.log('Projects fetched:', projectsData);
+      setProjects(projectsData || []);
+      
+      if (projectsData?.[0]) {
+        setSelectedProject(projectsData[0].id);
+        fetchTransactions(projectsData[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error",
+        description: "Could not fetch projects",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchTransactions = async (projectId: string) => {
+    try {
+      console.log('Fetching transactions for project:', projectId);
       const { data, error } = await supabase
         .from("finance_transactions")
         .select("*")
-        .eq('created_by', user?.id)
+        .eq('estate_project_id', projectId)
         .order("date", { ascending: false });
 
       if (error) {
@@ -72,10 +102,10 @@ export default function Finance() {
 
       // Calculate summary
       const income = (data || [])
-        .filter(t => t.type === 'income')
+        .filter(t => t.type === 'income' && t.approval_status === 'approved')
         .reduce((sum, t) => sum + Number(t.amount), 0);
       const expenses = (data || [])
-        .filter(t => t.type === 'expense')
+        .filter(t => t.type === 'expense' && t.approval_status === 'approved')
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
       setSummary({
@@ -103,6 +133,8 @@ export default function Finance() {
         {
           ...data,
           created_by: user?.id,
+          estate_project_id: selectedProject,
+          approval_status: 'pending'
         },
       ]);
 
@@ -112,12 +144,40 @@ export default function Finance() {
         title: "Success",
         description: "Transaction added successfully",
       });
-      fetchTransactions();
+      fetchTransactions(selectedProject!);
     } catch (error) {
       console.error("Error adding transaction:", error);
       toast({
         title: "Error",
         description: "Could not add transaction",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleApproval = async (transactionId: string, status: 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('finance_transactions')
+        .update({
+          approval_status: status,
+          approved_by: user?.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', transactionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Transaction ${status}`,
+      });
+      fetchTransactions(selectedProject!);
+    } catch (error) {
+      console.error(`Error ${status} transaction:`, error);
+      toast({
+        title: "Error",
+        description: `Could not ${status} transaction`,
         variant: "destructive",
       });
     }
@@ -157,13 +217,34 @@ export default function Finance() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold">Financial Management</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Financial Management</h1>
+        <Select
+          value={selectedProject || ''}
+          onValueChange={(value) => {
+            setSelectedProject(value);
+            fetchTransactions(value);
+          }}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Select project" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
             <CardTitle>Total Income</CardTitle>
+            <CardDescription>Approved transactions only</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">
@@ -175,6 +256,7 @@ export default function Finance() {
         <Card>
           <CardHeader>
             <CardTitle>Total Expenses</CardTitle>
+            <CardDescription>Approved transactions only</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">
@@ -186,6 +268,7 @@ export default function Finance() {
         <Card>
           <CardHeader>
             <CardTitle>Net Balance</CardTitle>
+            <CardDescription>Final settlement value</CardDescription>
           </CardHeader>
           <CardContent>
             <p
@@ -293,6 +376,17 @@ export default function Finance() {
                   {transaction.description && (
                     <p className="text-sm">{transaction.description}</p>
                   )}
+                  <Badge
+                    variant={
+                      transaction.approval_status === 'approved'
+                        ? 'success'
+                        : transaction.approval_status === 'rejected'
+                        ? 'destructive'
+                        : 'secondary'
+                    }
+                  >
+                    {transaction.approval_status}
+                  </Badge>
                 </div>
                 <div className="flex items-center gap-4">
                   <p
@@ -305,6 +399,26 @@ export default function Finance() {
                     {transaction.type === "income" ? "+" : "-"}$
                     {Number(transaction.amount).toLocaleString()}
                   </p>
+                  {transaction.approval_status === 'pending' && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-green-600"
+                        onClick={() => handleApproval(transaction.id, 'approved')}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600"
+                        onClick={() => handleApproval(transaction.id, 'rejected')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
