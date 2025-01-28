@@ -106,7 +106,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('Starting signup process...', { email, name });
       
-      // First, attempt to sign up the user
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -129,25 +128,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log('User signed up successfully:', authData.user.id);
 
-      // Create profile
-      const { error: profileError } = await supabase
+      // Wait a moment for the trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify profile creation
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            name,
-            email,
-            role: 'responsible_heir',
-            permissions: ['full_edit'],
-          }
-        ]);
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
 
       if (profileError) {
-        console.error('Profile creation error:', profileError);
+        console.error('Profile verification error:', profileError);
         throw profileError;
       }
 
-      console.log('Profile created successfully');
+      console.log('Profile verified successfully:', profile);
 
       setUser({
         id: authData.user.id,
