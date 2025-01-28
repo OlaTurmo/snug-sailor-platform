@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Finance() {
   const { user } = useAuth();
@@ -43,20 +44,25 @@ export default function Finance() {
 
   useEffect(() => {
     if (user) {
+      console.log('Fetching transactions for user:', user.id);
       fetchTransactions();
     }
   }, [user]);
 
   const fetchTransactions = async () => {
     try {
-      console.log('Fetching transactions...');
+      console.log('Starting transaction fetch...');
       const { data, error } = await supabase
         .from("finance_transactions")
         .select("*")
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
 
+      console.log('Transactions fetched:', data);
       setTransactions(data || []);
 
       // Calculate summary
@@ -86,6 +92,7 @@ export default function Finance() {
 
   const addTransaction = async (data: Partial<FinanceTransaction>) => {
     try {
+      console.log('Adding transaction:', data);
       const { error } = await supabase.from("finance_transactions").insert([
         {
           ...data,
@@ -111,7 +118,35 @@ export default function Finance() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="container mx-auto p-4 space-y-6">
+        <h1 className="text-3xl font-bold">Financial Management</h1>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-4 w-[150px]" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-[100px]" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-4 w-[200px]" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
