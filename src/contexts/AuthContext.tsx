@@ -18,6 +18,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const updateUserState = async (supabaseUserId: string) => {
+    console.log('Fetching user profile for ID:', supabaseUserId);
+    
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', supabaseUserId)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      return;
+    }
+
+    if (profile) {
+      console.log('Setting user profile:', profile);
+      const userData: User = {
+        id: supabaseUserId,
+        email: profile.email,
+        name: profile.name,
+        role: profile.role || 'responsible_heir',
+        permissions: profile.permissions || ['full_edit'],
+        createdAt: new Date(profile.created_at),
+        updatedAt: new Date(profile.updated_at),
+      };
+      setUser(userData);
+      console.log('User state updated:', userData);
+    }
+  };
+
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -25,34 +55,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Session check error:', error);
-          throw error;
+          return;
         }
         
         if (session?.user) {
           console.log('Found existing session:', session.user.id);
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (profileError) {
-            console.error('Profile fetch error:', profileError);
-            throw profileError;
-          }
-
-          if (profile) {
-            console.log('Setting user profile:', profile);
-            setUser({
-              id: session.user.id,
-              email: session.user.email!,
-              name: profile.name,
-              role: profile.role || 'responsible_heir',
-              permissions: profile.permissions || ['full_edit'],
-              createdAt: new Date(profile.created_at),
-              updatedAt: new Date(profile.updated_at),
-            });
-          }
+          await updateUserState(session.user.id);
         }
       } catch (error) {
         console.error('Error checking session:', error);
@@ -63,33 +71,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     checkSession();
 
-    // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session?.user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Profile fetch error on auth change:', profileError);
-          return;
-        }
-
-        if (profile) {
-          console.log('Setting user profile on auth change:', profile);
-          setUser({
-            id: session.user.id,
-            email: session.user.email!,
-            name: profile.name,
-            role: profile.role || 'responsible_heir',
-            permissions: profile.permissions || ['full_edit'],
-            createdAt: new Date(profile.created_at),
-            updatedAt: new Date(profile.updated_at),
-          });
-        }
+        await updateUserState(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
         setUser(null);
@@ -119,51 +105,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       throw new Error('No user returned after login');
     }
 
-    console.log('Supabase auth successful, fetching profile...', { userId: authUser.id });
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
-
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
-      throw profileError;
-    }
-
-    if (!profile) {
-      console.error('No profile found for user');
-      throw new Error('No profile found for user');
-    }
-
-    console.log('Profile fetched successfully:', profile);
-
-    const userData: User = {
-      id: authUser.id,
-      email: authUser.email!,
-      name: profile.name,
-      role: profile.role || 'responsible_heir',
-      permissions: profile.permissions || ['full_edit'],
-      createdAt: new Date(profile.created_at),
-      updatedAt: new Date(profile.updated_at),
-    };
-
-    console.log('Setting user state with:', userData);
-    setUser(userData);
-    
-    // Wait for state to update
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const currentUser = user;
-    console.log('Current user state after update:', currentUser);
-    
-    if (!currentUser) {
-      console.error('User state not updated properly');
-      throw new Error('User state not updated properly');
-    }
-
-    console.log('Login process completed successfully');
+    // The user state will be updated by the auth state change listener
+    console.log('Login successful, waiting for auth state change');
   };
 
   const logout = async () => {
