@@ -6,6 +6,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
   isRole: (role: UserRole) => boolean;
 }
@@ -21,6 +22,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('Checking for existing session...');
     setIsLoading(false);
   }, []);
+
+  const signup = async (email: string, password: string, name: string) => {
+    try {
+      console.log('Signing up...', { email, name });
+      // Here we would implement actual signup logic with Supabase
+      setUser({
+        id: '1',
+        email,
+        name,
+        role: 'responsible_heir',
+        permissions: ['full_edit'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    } catch (error) {
+      console.error('Signup error:', error);
+      throw error;
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -61,7 +81,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, hasPermission, isRole }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, signup, hasPermission, isRole }}>
       {children}
     </AuthContext.Provider>
   );
