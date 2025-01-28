@@ -105,11 +105,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('No user returned after login');
       }
 
-      console.log('Supabase auth successful, waiting for auth state change');
+      console.log('Supabase auth successful, fetching user profile');
       
-      // The user state will be updated by the auth state change listener
-      // Adding a small delay to ensure the listener has time to process
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Immediately fetch and update user profile
+      const userData = await updateUserState(authUser.id);
+      console.log('User profile fetched and state updated:', userData);
+      
+      return { user: userData };
       
     } catch (error) {
       console.error('Login process failed:', error);

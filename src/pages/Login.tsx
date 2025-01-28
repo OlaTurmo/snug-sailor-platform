@@ -23,23 +23,13 @@ const Login = () => {
     
     try {
       console.log('Calling login function...');
-      await login(email, password);
+      const loginResult = await login(email, password);
       
       console.log('Login function completed successfully');
-      console.log('Current user state:', user);
+      console.log('Login result:', loginResult);
       
-      // Add a delay to ensure state is updated
-      console.log('Waiting for user state update...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      console.log('Delay completed, checking user state:', user);
-      
-      if (user) {
-        console.log('User state is valid, proceeding with navigation', {
-          id: user.id,
-          email: user.email,
-          role: user.role
-        });
+      if (loginResult?.user) {
+        console.log('Login successful, user data received:', loginResult.user);
         
         toast({
           title: "Innlogget",
@@ -50,7 +40,7 @@ const Login = () => {
         navigate("/oversikt", { replace: true });
         console.log('Navigation command executed');
       } else {
-        console.log('User state is null after login and delay');
+        console.log('No user data received after login');
         toast({
           title: "Feil ved innlogging",
           description: "Kunne ikke hente brukerprofil. Prøv igjen.",
