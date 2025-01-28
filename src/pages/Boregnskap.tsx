@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Navbar } from "@/components/Navbar";
 
 export default function Boregnskap() {
   const { user } = useAuth();
@@ -103,177 +104,183 @@ export default function Boregnskap() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-4 space-y-6">
-        <h1 className="text-3xl font-bold">Boregnskap</h1>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <div className="h-4 w-[150px] bg-gray-200 animate-pulse rounded" />
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 w-[100px] bg-gray-200 animate-pulse rounded" />
-              </CardContent>
-            </Card>
-          ))}
+      <>
+        <Navbar />
+        <div className="container mx-auto p-4 space-y-6">
+          <h1 className="text-3xl font-bold">Boregnskap</h1>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <div className="h-4 w-[150px] bg-gray-200 animate-pulse rounded" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 w-[100px] bg-gray-200 animate-pulse rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold">Boregnskap</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Inntekter fra Salg av Eiendeler</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
-              {new Intl.NumberFormat("nb-NO", {
-                style: "currency",
-                currency: "NOK",
-              }).format(
-                transactions
-                  .filter(
-                    (t) =>
-                      t.type === "income" &&
-                      t.category === "sale" &&
-                      t.approval_status === "approved"
-                  )
-                  .reduce((sum, t) => sum + Number(t.amount), 0)
-              )}
-            </p>
-          </CardContent>
-        </Card>
+    <>
+      <Navbar />
+      <div className="container mx-auto p-4 space-y-6">
+        <h1 className="text-3xl font-bold">Boregnskap</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Inntekter fra Salg av Eiendeler</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-green-600">
+                {new Intl.NumberFormat("nb-NO", {
+                  style: "currency",
+                  currency: "NOK",
+                }).format(
+                  transactions
+                    .filter(
+                      (t) =>
+                        t.type === "income" &&
+                        t.category === "sale" &&
+                        t.approval_status === "approved"
+                    )
+                    .reduce((sum, t) => sum + Number(t.amount), 0)
+                )}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Totale Booppgjørskostnader</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold text-red-600">
+                {new Intl.NumberFormat("nb-NO", {
+                  style: "currency",
+                  currency: "NOK",
+                }).format(
+                  transactions
+                    .filter(
+                      (t) =>
+                        t.type === "expense" &&
+                        t.approval_status === "approved"
+                    )
+                    .reduce((sum, t) => sum + Number(t.amount), 0)
+                )}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Totale Booppgjørskostnader</CardTitle>
+            <CardTitle>Budsjett og Utgiftsoversikt</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-red-600">
-              {new Intl.NumberFormat("nb-NO", {
-                style: "currency",
-                currency: "NOK",
-              }).format(
-                transactions
+            <div className="space-y-4">
+              {["legal", "tax", "funeral", "other"].map((category) => {
+                const amount = transactions
                   .filter(
                     (t) =>
                       t.type === "expense" &&
+                      t.category === category &&
                       t.approval_status === "approved"
                   )
-                  .reduce((sum, t) => sum + Number(t.amount), 0)
-              )}
-            </p>
+                  .reduce((sum, t) => sum + Number(t.amount), 0);
+                
+                const pendingAmount = transactions
+                  .filter(
+                    (t) =>
+                      t.type === "expense" &&
+                      t.category === category &&
+                      t.approval_status === "pending"
+                  )
+                  .reduce((sum, t) => sum + Number(t.amount), 0);
+
+                return (
+                  <div
+                    key={category}
+                    className="flex flex-col space-y-2 p-4 border rounded-lg"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">
+                        {category === "legal"
+                          ? "Advokatkostnader"
+                          : category === "tax"
+                          ? "Skatter"
+                          : category === "funeral"
+                          ? "Begravelseskostnader"
+                          : "Andre kostnader"}
+                      </span>
+                      <div className="text-right">
+                        <span className={`font-bold ${amount > 0 ? "text-red-600" : "text-gray-500"}`}>
+                          {new Intl.NumberFormat("nb-NO", {
+                            style: "currency",
+                            currency: "NOK",
+                          }).format(amount)}
+                        </span>
+                        {pendingAmount > 0 && (
+                          <div className="text-sm text-amber-600">
+                            Ventende godkjenning: {new Intl.NumberFormat("nb-NO", {
+                              style: "currency",
+                              currency: "NOK",
+                            }).format(pendingAmount)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Endelig Arveoppgjør</CardTitle>
+            <CardDescription>
+              Netto verdi tilgjengelig for fordeling
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-3xl font-bold text-primary">
+                {new Intl.NumberFormat("nb-NO", {
+                  style: "currency",
+                  currency: "NOK",
+                }).format(summary.netBalance)}
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Totale Inntekter</h4>
+                  <p className="text-green-600">
+                    {new Intl.NumberFormat("nb-NO", {
+                      style: "currency",
+                      currency: "NOK",
+                    }).format(summary.totalIncome)}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Totale Utgifter</h4>
+                  <p className="text-red-600">
+                    {new Intl.NumberFormat("nb-NO", {
+                      style: "currency",
+                      currency: "NOK",
+                    }).format(summary.totalExpenses)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Budsjett og Utgiftsoversikt</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {["legal", "tax", "funeral", "other"].map((category) => {
-              const amount = transactions
-                .filter(
-                  (t) =>
-                    t.type === "expense" &&
-                    t.category === category &&
-                    t.approval_status === "approved"
-                )
-                .reduce((sum, t) => sum + Number(t.amount), 0);
-              
-              const pendingAmount = transactions
-                .filter(
-                  (t) =>
-                    t.type === "expense" &&
-                    t.category === category &&
-                    t.approval_status === "pending"
-                )
-                .reduce((sum, t) => sum + Number(t.amount), 0);
-
-              return (
-                <div
-                  key={category}
-                  className="flex flex-col space-y-2 p-4 border rounded-lg"
-                >
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">
-                      {category === "legal"
-                        ? "Advokatkostnader"
-                        : category === "tax"
-                        ? "Skatter"
-                        : category === "funeral"
-                        ? "Begravelseskostnader"
-                        : "Andre kostnader"}
-                    </span>
-                    <div className="text-right">
-                      <span className={`font-bold ${amount > 0 ? "text-red-600" : "text-gray-500"}`}>
-                        {new Intl.NumberFormat("nb-NO", {
-                          style: "currency",
-                          currency: "NOK",
-                        }).format(amount)}
-                      </span>
-                      {pendingAmount > 0 && (
-                        <div className="text-sm text-amber-600">
-                          Ventende godkjenning: {new Intl.NumberFormat("nb-NO", {
-                            style: "currency",
-                            currency: "NOK",
-                          }).format(pendingAmount)}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Endelig Arveoppgjør</CardTitle>
-          <CardDescription>
-            Netto verdi tilgjengelig for fordeling
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-3xl font-bold text-primary">
-              {new Intl.NumberFormat("nb-NO", {
-                style: "currency",
-                currency: "NOK",
-              }).format(summary.netBalance)}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-semibold mb-2">Totale Inntekter</h4>
-                <p className="text-green-600">
-                  {new Intl.NumberFormat("nb-NO", {
-                    style: "currency",
-                    currency: "NOK",
-                  }).format(summary.totalIncome)}
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">Totale Utgifter</h4>
-                <p className="text-red-600">
-                  {new Intl.NumberFormat("nb-NO", {
-                    style: "currency",
-                    currency: "NOK",
-                  }).format(summary.totalExpenses)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    </>
   );
 }
