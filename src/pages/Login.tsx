@@ -36,6 +36,7 @@ const Login = () => {
         variant: "destructive",
       });
     } finally {
+      console.log('Login attempt completed, resetting loading state');
       setIsLoading(false);
     }
   };
