@@ -15,10 +15,34 @@ import {
   HelpCircle,
   Phone,
   CreditCard,
+  LogOut,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 export const Navbar = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Utlogget",
+        description: "Du er nå logget ut.",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Feil ved utlogging",
+        description: "Kunne ikke logge ut.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -59,11 +83,25 @@ export const Navbar = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Login/Register Button */}
-          <Button className="bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] hover:opacity-90 flex items-center gap-2">
-            <Users size={18} />
-            Logg inn
-          </Button>
+          {/* Login/Logout Button */}
+          {user ? (
+            <Button 
+              onClick={handleLogout}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <LogOut size={18} />
+              Logg ut
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => navigate("/login")}
+              className="bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] hover:opacity-90 flex items-center gap-2"
+            >
+              <Users size={18} />
+              Logg inn
+            </Button>
+          )}
         </div>
 
         {/* Mobile Navigation */}
@@ -111,12 +149,24 @@ export const Navbar = () => {
                   Personvern og vilkår
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Button className="w-full bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] hover:opacity-90 flex items-center gap-2">
-                  <Users size={18} />
-                  Logg inn
-                </Button>
-              </DropdownMenuItem>
+              {user ? (
+                <DropdownMenuItem onClick={handleLogout}>
+                  <div className="flex items-center gap-2 w-full">
+                    <LogOut size={18} />
+                    Logg ut
+                  </div>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem>
+                  <Button 
+                    onClick={() => navigate("/login")}
+                    className="w-full bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] hover:opacity-90 flex items-center gap-2"
+                  >
+                    <Users size={18} />
+                    Logg inn
+                  </Button>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
