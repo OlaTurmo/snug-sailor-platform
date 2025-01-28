@@ -20,13 +20,11 @@ export const Navbar = () => {
   const ListItem = ({
     className,
     title,
-    children,
     to,
     ...props
   }: {
     className?: string;
     title: string;
-    children?: React.ReactNode;
     to: string;
   }) => {
     return (
@@ -35,15 +33,12 @@ export const Navbar = () => {
           <Link
             to={to}
             className={cn(
-              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+              "block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
               className
             )}
             {...props}
           >
             <div className="text-sm font-medium leading-none">{title}</div>
-            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-              {children}
-            </p>
           </Link>
         </NavigationMenuLink>
       </li>
@@ -65,48 +60,36 @@ export const Navbar = () => {
               <NavigationMenu>
                 <NavigationMenuList>
                   <NavigationMenuItem>
-                    <NavigationMenuTrigger>Oversikt</NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-3 p-4">
-                        <ListItem to="/oversikt" title="Dashbord">
-                          Hovedoversikt og varsler
-                        </ListItem>
-                        <ListItem to="/finance" title="Økonomi">
-                          Økonomistyring og regnskap
-                        </ListItem>
-                        <ListItem to="/tasks" title="Oppgaver">
-                          Oppgaveliste og fremdrift
-                        </ListItem>
-                      </ul>
-                    </NavigationMenuContent>
+                    <Link
+                      to="/oversikt"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
+                    >
+                      Oversikt
+                    </Link>
                   </NavigationMenuItem>
-
                   <NavigationMenuItem>
-                    <NavigationMenuTrigger>Dokumenter</NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-3 p-4">
-                        <ListItem to="/documents" title="Dokumenthåndtering">
-                          Last opp og organiser dokumenter
-                        </ListItem>
-                        <ListItem to="/collaboration" title="Samarbeid">
-                          Del og samarbeid med andre
-                        </ListItem>
-                      </ul>
-                    </NavigationMenuContent>
+                    <Link
+                      to="/documents"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
+                    >
+                      Dokumenter
+                    </Link>
                   </NavigationMenuItem>
-
                   <NavigationMenuItem>
-                    <NavigationMenuTrigger>Økonomi</NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-3 p-4">
-                        <ListItem to="/finance" title="Økonomistyring">
-                          Inntekter, utgifter og regnskap
-                        </ListItem>
-                        <ListItem to="/assets-liabilities" title="Eiendeler og Gjeld">
-                          Oversikt over verdier og forpliktelser
-                        </ListItem>
-                      </ul>
-                    </NavigationMenuContent>
+                    <Link
+                      to="/tasks"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
+                    >
+                      Oppgaver
+                    </Link>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link
+                      to="/finance"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
+                    >
+                      Økonomi
+                    </Link>
                   </NavigationMenuItem>
                 </NavigationMenuList>
               </NavigationMenu>
@@ -187,6 +170,12 @@ export const Navbar = () => {
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 >
                   Oppgaver
+                </Link>
+                <Link
+                  to="/finance"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                >
+                  Økonomi
                 </Link>
                 <Button
                   onClick={() => logout()}
