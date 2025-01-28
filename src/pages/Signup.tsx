@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { UserPlus } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
@@ -25,8 +25,20 @@ const Signup = () => {
         description: "Du er nå registrert og logget inn.",
       });
       navigate("/oversikt");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error);
+      
+      // Handle specific case where user already exists
+      if (error?.code === "user_already_exists") {
+        toast({
+          title: "E-postadressen er allerede i bruk",
+          description: "Vennligst logg inn eller bruk en annen e-postadresse.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Handle other errors
       toast({
         title: "Feil ved registrering",
         description: "Kunne ikke opprette konto. Prøv igjen senere.",
