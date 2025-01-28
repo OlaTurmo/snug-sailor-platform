@@ -279,8 +279,8 @@ export default function Finance() {
         </Card>
       </div>
 
-      <Tabs defaultValue="oversikt" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="boregnskap" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="oversikt">Oversikt</TabsTrigger>
           <TabsTrigger value="eiendeler">Eiendeler</TabsTrigger>
           <TabsTrigger value="gjeld">Gjeld</TabsTrigger>
@@ -333,6 +333,7 @@ export default function Finance() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                {/* Budget Tracker Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
@@ -380,6 +381,7 @@ export default function Finance() {
                   </Card>
                 </div>
 
+                {/* Expense Categories */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Budsjett og Utgiftsoversikt</CardTitle>
@@ -444,6 +446,7 @@ export default function Finance() {
                   </CardContent>
                 </Card>
 
+                {/* Final Settlement Summary */}
                 <Card>
                   <CardHeader>
                     <CardTitle>Endelig Arveoppgjør</CardTitle>
