@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -61,6 +62,7 @@ const Login = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="din@epost.no"
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -75,6 +77,7 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -84,7 +87,14 @@ const Login = () => {
             className="w-full bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] hover:opacity-90"
             disabled={isLoading}
           >
-            {isLoading ? "Logger inn..." : "Logg inn"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Logger inn...
+              </>
+            ) : (
+              "Logg inn"
+            )}
           </Button>
         </form>
       </div>
