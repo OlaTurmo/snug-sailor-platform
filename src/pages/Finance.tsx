@@ -43,9 +43,13 @@ export default function Finance() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Finance component mounted, user:', user);
     if (user) {
-      console.log('Fetching transactions for user:', user.id);
+      console.log('User is authenticated, fetching transactions for:', user.id);
       fetchTransactions();
+    } else {
+      console.log('No user found, setting loading to false');
+      setLoading(false);
     }
   }, [user]);
 
@@ -55,6 +59,7 @@ export default function Finance() {
       const { data, error } = await supabase
         .from("finance_transactions")
         .select("*")
+        .eq('created_by', user?.id)
         .order("date", { ascending: false });
 
       if (error) {
@@ -86,6 +91,7 @@ export default function Finance() {
         variant: "destructive",
       });
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   };
