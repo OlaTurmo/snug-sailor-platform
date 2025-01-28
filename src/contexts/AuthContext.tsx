@@ -128,14 +128,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log('User signed up successfully:', authData.user.id);
 
-      // Create profile manually if trigger hasn't done it yet
+      // Wait briefly for the trigger to execute
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Attempt to create profile if it doesn't exist
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
 
-      if (checkError || !existingProfile) {
+      if (!existingProfile) {
         console.log('Profile not found, creating manually...');
         const { error: insertError } = await supabase
           .from('profiles')
@@ -147,7 +150,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               role: 'responsible_heir',
               permissions: ['full_edit']
             }
-          ]);
+          ])
+          .select()
+          .single();
 
         if (insertError) {
           console.error('Manual profile creation error:', insertError);
@@ -155,16 +160,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
-      // Fetch the profile after ensuring it exists
+      // Final profile fetch attempt
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authData.user.id)
         .single();
 
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        throw profileError;
+      if (profileError || !profile) {
+        console.error('Final profile fetch error:', profileError);
+        throw profileError || new Error('Profile not found after creation');
       }
 
       console.log('Profile verified successfully:', profile);
@@ -173,10 +178,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         id: authData.user.id,
         email,
         name,
-        role: 'responsible_heir',
-        permissions: ['full_edit'],
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        role: profile.role || 'responsible_heir',
+        permissions: profile.permissions || ['full_edit'],
+        createdAt: new Date(profile.created_at),
+        updatedAt: new Date(profile.updated_at),
       });
     } catch (error) {
       console.error('Signup process failed:', error);
