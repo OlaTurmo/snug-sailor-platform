@@ -22,17 +22,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for existing session
     const checkSession = async () => {
       try {
+        console.log('Checking session...');
         const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
+        if (error) {
+          console.error('Session check error:', error);
+          throw error;
+        }
         
         if (session?.user) {
-          const { data: profile } = await supabase
+          console.log('Found existing session:', session.user.id);
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
 
+          if (profileError) {
+            console.error('Profile fetch error:', profileError);
+            throw profileError;
+          }
+
           if (profile) {
+            console.log('Setting user profile:', profile);
             setUser({
               id: session.user.id,
               email: session.user.email!,
@@ -55,15 +66,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Subscribe to auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event);
+      console.log('Auth state changed:', event, session?.user?.id);
       if (event === 'SIGNED_IN' && session?.user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single();
 
+        if (profileError) {
+          console.error('Profile fetch error on auth change:', profileError);
+          return;
+        }
+
         if (profile) {
+          console.log('Setting user profile on auth change:', profile);
           setUser({
             id: session.user.id,
             email: session.user.email!,
@@ -75,6 +92,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
       } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
         setUser(null);
       }
     });
@@ -86,21 +104,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signup = async (email: string, password: string, name: string) => {
     try {
-      console.log('Signing up...', { email, name });
-      const { data: { user: authUser }, error: signUpError } = await supabase.auth.signUp({
+      console.log('Starting signup process...', { email, name });
+      
+      // First, attempt to sign up the user
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            name: name
+          }
+        }
       });
 
-      if (signUpError) throw signUpError;
-      if (!authUser) throw new Error('No user returned after signup');
+      if (signUpError) {
+        console.error('Signup error:', signUpError);
+        throw signUpError;
+      }
+
+      if (!authData.user) {
+        console.error('No user returned after signup');
+        throw new Error('No user returned after signup');
+      }
+
+      console.log('User signed up successfully:', authData.user.id);
 
       // Create profile
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
           {
-            id: authUser.id,
+            id: authData.user.id,
             name,
             email,
             role: 'responsible_heir',
@@ -108,10 +142,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         ]);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw profileError;
+      }
+
+      console.log('Profile created successfully');
 
       setUser({
-        id: authUser.id,
+        id: authData.user.id,
         email,
         name,
         role: 'responsible_heir',
@@ -120,7 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         updatedAt: new Date(),
       });
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('Signup process failed:', error);
       throw error;
     }
   };
