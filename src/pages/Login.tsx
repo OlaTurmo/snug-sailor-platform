@@ -25,22 +25,22 @@ const Login = () => {
       console.log('Calling login function...');
       await login(email, password);
       
-      console.log('Login function completed, waiting for user state update');
-      console.log('Current user state before delay:', user);
+      console.log('Login function completed successfully');
+      console.log('Current user state:', user);
       
-      // Add a longer delay to ensure state is updated
+      // Add a delay to ensure state is updated
+      console.log('Waiting for user state update...');
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      console.log('Delay completed, current user state:', user);
+      console.log('Delay completed, checking user state:', user);
       
       if (user) {
-        console.log('User state is valid:', {
+        console.log('User state is valid, proceeding with navigation', {
           id: user.id,
           email: user.email,
           role: user.role
         });
         
-        console.log('Showing success toast notification');
         toast({
           title: "Innlogget",
           description: "Du er nå logget inn.",
