@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { Logo } from "./Logo";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -55,9 +56,7 @@ export const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-xl font-bold text-gray-800">
-                Arveoppgjør
-              </Link>
+              <Logo />
             </div>
           </div>
 
