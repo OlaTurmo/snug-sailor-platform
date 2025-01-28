@@ -31,6 +31,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Finance() {
   const { user } = useAuth();
@@ -186,7 +187,7 @@ export default function Finance() {
   if (loading) {
     return (
       <div className="container mx-auto p-4 space-y-6">
-        <h1 className="text-3xl font-bold">Financial Management</h1>
+        <h1 className="text-3xl font-bold">Økonomistyring</h1>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
@@ -199,18 +200,6 @@ export default function Finance() {
             </Card>
           ))}
         </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-4 w-[200px]" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -220,7 +209,7 @@ export default function Finance() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Økonomistyring</h1>
         <Select
-          value={selectedProject || ''}
+          value={selectedProject || ""}
           onValueChange={(value) => {
             setSelectedProject(value);
             fetchTransactions(value);
@@ -239,7 +228,6 @@ export default function Finance() {
         </Select>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
@@ -248,7 +236,10 @@ export default function Finance() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-green-600">
-              ${summary.totalIncome.toLocaleString('no-NO')}
+              {new Intl.NumberFormat("nb-NO", {
+                style: "currency",
+                currency: "NOK",
+              }).format(summary.totalIncome)}
             </p>
           </CardContent>
         </Card>
@@ -260,7 +251,10 @@ export default function Finance() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">
-              ${summary.totalExpenses.toLocaleString('no-NO')}
+              {new Intl.NumberFormat("nb-NO", {
+                style: "currency",
+                currency: "NOK",
+              }).format(summary.totalExpenses)}
             </p>
           </CardContent>
         </Card>
@@ -276,156 +270,300 @@ export default function Finance() {
                 summary.netBalance >= 0 ? "text-green-600" : "text-red-600"
               }`}
             >
-              ${summary.netBalance.toLocaleString('no-NO')}
+              {new Intl.NumberFormat("nb-NO", {
+                style: "currency",
+                currency: "NOK",
+              }).format(summary.netBalance)}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Transactions Section */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Transaksjoner</CardTitle>
-            <CardDescription>Spor alle økonomiske transaksjoner</CardDescription>
-          </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2" />
-                Legg til Transaksjon
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Legg til Ny Transaksjon</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  addTransaction({
-                    type: formData.get("type") as FinanceTransaction["type"],
-                    category: formData.get("category") as string,
-                    amount: Number(formData.get("amount")),
-                    description: formData.get("description") as string,
-                    date: new Date().toISOString(),
-                  });
-                }}
-                className="space-y-4"
-              >
-                <div>
-                  <Label htmlFor="type">Type</Label>
-                  <Select name="type" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Velg type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="income">Inntekt</SelectItem>
-                      <SelectItem value="expense">Utgift</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="category">Kategori</Label>
-                  <Select name="category" required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Velg kategori" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sale">Salg av eiendel</SelectItem>
-                      <SelectItem value="legal">Advokatkostnader</SelectItem>
-                      <SelectItem value="tax">Skatter</SelectItem>
-                      <SelectItem value="funeral">Begravelseskostnader</SelectItem>
-                      <SelectItem value="other">Annet</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="amount">Beløp (kr)</Label>
-                  <Input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Beskrivelse</Label>
-                  <Textarea id="description" name="description" />
-                </div>
-                <Button type="submit">Legg til Transaksjon</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {transactions.map((transaction) => (
-              <div
-                key={transaction.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div>
-                  <h3 className="font-semibold">{transaction.category}</h3>
-                  <p className="text-sm text-gray-500">
-                    {new Date(transaction.date).toLocaleDateString('no-NO')}
-                  </p>
-                  {transaction.description && (
-                    <p className="text-sm">{transaction.description}</p>
-                  )}
-                  <Badge
-                    variant={
-                      transaction.approval_status === 'approved'
-                        ? 'success'
-                        : transaction.approval_status === 'rejected'
-                        ? 'destructive'
-                        : 'secondary'
-                    }
-                  >
-                    {transaction.approval_status === 'approved' ? 'Godkjent' : 
-                     transaction.approval_status === 'rejected' ? 'Avvist' : 'Venter'}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-4">
-                  <p
-                    className={`font-semibold ${
-                      transaction.type === "income"
-                        ? "text-green-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {transaction.type === "income" ? "+" : "-"}kr
-                    {Number(transaction.amount).toLocaleString('no-NO')}
-                  </p>
-                  {transaction.approval_status === 'pending' && (
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-600"
-                        onClick={() => handleApproval(transaction.id, 'approved')}
-                      >
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600"
-                        onClick={() => handleApproval(transaction.id, 'rejected')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+      <Tabs defaultValue="transactions" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="transactions">Transaksjoner</TabsTrigger>
+          <TabsTrigger value="boregnskap">Boregnskap</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="transactions">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Transaksjoner</CardTitle>
+                <CardDescription>Spor alle økonomiske transaksjoner</CardDescription>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2" />
+                    Legg til Transaksjon
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Legg til Ny Transaksjon</DialogTitle>
+                  </DialogHeader>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const formData = new FormData(e.currentTarget);
+                      addTransaction({
+                        type: formData.get("type") as FinanceTransaction["type"],
+                        category: formData.get("category") as string,
+                        amount: Number(formData.get("amount")),
+                        description: formData.get("description") as string,
+                        date: new Date().toISOString(),
+                      });
+                    }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <Label htmlFor="type">Type</Label>
+                      <Select name="type" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Velg type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="income">Inntekt</SelectItem>
+                          <SelectItem value="expense">Utgift</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Kategori</Label>
+                      <Select name="category" required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Velg kategori" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sale">Salg av eiendel</SelectItem>
+                          <SelectItem value="legal">Advokatkostnader</SelectItem>
+                          <SelectItem value="tax">Skatter</SelectItem>
+                          <SelectItem value="funeral">Begravelseskostnader</SelectItem>
+                          <SelectItem value="other">Annet</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="amount">Beløp (kr)</Label>
+                      <Input
+                        id="amount"
+                        name="amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="description">Beskrivelse</Label>
+                      <Textarea id="description" name="description" />
+                    </div>
+                    <Button type="submit">Legg til Transaksjon</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {transactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div>
+                      <h3 className="font-semibold">{transaction.category}</h3>
+                      <p className="text-sm text-gray-500">
+                        {new Date(transaction.date).toLocaleDateString("nb-NO")}
+                      </p>
+                      {transaction.description && (
+                        <p className="text-sm">{transaction.description}</p>
+                      )}
+                      <Badge
+                        variant={
+                          transaction.approval_status === "approved"
+                            ? "success"
+                            : transaction.approval_status === "rejected"
+                            ? "destructive"
+                            : "secondary"
+                        }
+                      >
+                        {transaction.approval_status === "approved"
+                          ? "Godkjent"
+                          : transaction.approval_status === "rejected"
+                          ? "Avvist"
+                          : "Venter"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <p
+                        className={`font-semibold ${
+                          transaction.type === "income"
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {transaction.type === "income" ? "+" : "-"}
+                        {new Intl.NumberFormat("nb-NO", {
+                          style: "currency",
+                          currency: "NOK",
+                        }).format(Number(transaction.amount))}
+                      </p>
+                      {transaction.approval_status === "pending" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600"
+                            onClick={() => handleApproval(transaction.id, "approved")}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600"
+                            onClick={() => handleApproval(transaction.id, "rejected")}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="boregnskap">
+          <Card>
+            <CardHeader>
+              <CardTitle>Boregnskap</CardTitle>
+              <CardDescription>
+                Detaljert økonomisk oversikt for booppgjøret
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Inntekter fra Salg av Eiendeler</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-2xl font-bold text-green-600">
+                        {new Intl.NumberFormat("nb-NO", {
+                          style: "currency",
+                          currency: "NOK",
+                        }).format(
+                          transactions
+                            .filter(
+                              (t) =>
+                                t.type === "income" &&
+                                t.category === "sale" &&
+                                t.approval_status === "approved"
+                            )
+                            .reduce((sum, t) => sum + Number(t.amount), 0)
+                        )}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Totale Booppgjørskostnader</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-2xl font-bold text-red-600">
+                        {new Intl.NumberFormat("nb-NO", {
+                          style: "currency",
+                          currency: "NOK",
+                        }).format(
+                          transactions
+                            .filter(
+                              (t) =>
+                                t.type === "expense" &&
+                                t.approval_status === "approved"
+                            )
+                            .reduce((sum, t) => sum + Number(t.amount), 0)
+                        )}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Kostnadsfordeling</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {["legal", "tax", "funeral", "other"].map((category) => {
+                        const amount = transactions
+                          .filter(
+                            (t) =>
+                              t.type === "expense" &&
+                              t.category === category &&
+                              t.approval_status === "approved"
+                          )
+                          .reduce((sum, t) => sum + Number(t.amount), 0);
+                        return (
+                          <div
+                            key={category}
+                            className="flex justify-between items-center"
+                          >
+                            <span className="font-medium">
+                              {category === "legal"
+                                ? "Advokatkostnader"
+                                : category === "tax"
+                                ? "Skatter"
+                                : category === "funeral"
+                                ? "Begravelseskostnader"
+                                : "Andre kostnader"}
+                            </span>
+                            <span
+                              className={`font-bold ${
+                                amount > 0 ? "text-red-600" : "text-gray-500"
+                              }`}
+                            >
+                              {new Intl.NumberFormat("nb-NO", {
+                                style: "currency",
+                                currency: "NOK",
+                              }).format(amount)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Endelig Arveoppgjør</CardTitle>
+                    <CardDescription>
+                      Netto verdi tilgjengelig for fordeling
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold text-primary">
+                      {new Intl.NumberFormat("nb-NO", {
+                        style: "currency",
+                        currency: "NOK",
+                      }).format(summary.netBalance)}
+                    </p>
+                    <Button className="mt-4">
+                      Generer Oppgjørsrapport
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
