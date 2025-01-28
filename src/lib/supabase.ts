@@ -23,19 +23,38 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Add error event listener for debugging
+// Add detailed logging for auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
-  console.log('Supabase auth event:', event);
+  console.log('Auth state change event:', event);
   if (session) {
-    console.log('Session user:', session.user?.id);
+    console.log('Session details:', {
+      userId: session.user?.id,
+      email: session.user?.email,
+      lastSignIn: session.user?.last_sign_in_at
+    });
+  } else {
+    console.log('No active session');
   }
 });
 
-// Test connection
+// Test connection and log detailed response
 supabase.auth.getSession().then(({ data, error }) => {
   if (error) {
     console.error('Supabase connection error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      status: error.status,
+      name: error.name
+    });
   } else {
     console.log('Supabase connection successful');
+    if (data.session) {
+      console.log('Active session found:', {
+        userId: data.session.user.id,
+        email: data.session.user.email
+      });
+    } else {
+      console.log('No active session found');
+    }
   }
 });
