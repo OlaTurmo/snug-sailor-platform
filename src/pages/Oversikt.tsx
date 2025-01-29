@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Check, X, ArrowRight, List, Calendar, User, Upload, Send, Divide, Bell } from "lucide-react";
+import { AddEstateDialog } from "@/components/estates/AddEstateDialog";
 
 interface Task {
   id: string;
@@ -26,6 +27,15 @@ interface Notification {
   read: boolean;
 }
 
+interface Estate {
+  id: string;
+  name: string;
+  deceased_name: string;
+  deceased_date: string;
+  deceased_id_number: string;
+  created_at: string;
+}
+
 const Oversikt = () => {
   const { user } = useAuth();
   useProtectedRoute();
@@ -33,13 +43,14 @@ const Oversikt = () => {
   
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [estates, setEstates] = useState<Estate[]>([]);
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('Fetching tasks and notifications');
+        console.log('Fetching tasks, notifications, and estates');
         
         // Fetch tasks
         const { data: tasksData, error: tasksError } = await supabase
@@ -64,8 +75,17 @@ const Oversikt = () => {
 
         if (notificationsError) throw notificationsError;
 
+        // Fetch estates
+        const { data: estatesData, error: estatesError } = await supabase
+          .from('estates')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (estatesError) throw estatesError;
+
         setTasks(tasksData || []);
         setNotifications(notificationsData || []);
+        setEstates(estatesData || []);
         
         // Calculate progress based on completed tasks
         if (tasksData) {
@@ -78,7 +98,7 @@ const Oversikt = () => {
         console.error('Error fetching data:', error);
         toast({
           title: "Feil ved lasting av data",
-          description: "Kunne ikke laste inn oppgaver og varsler.",
+          description: "Kunne ikke laste inn data.",
           variant: "destructive",
         });
       } finally {
@@ -118,6 +138,51 @@ const Oversikt = () => {
       <Navbar />
       <main className="container mx-auto px-4 pt-24">
         <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Oversikt</h1>
+            <AddEstateDialog />
+          </div>
+
+          {/* Estates Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Aktive bo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Navn på bo</TableHead>
+                      <TableHead>Avdød</TableHead>
+                      <TableHead>Dødsdato</TableHead>
+                      <TableHead>Fødselsnummer</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {estates.map((estate) => (
+                      <TableRow key={estate.id}>
+                        <TableCell>{estate.name}</TableCell>
+                        <TableCell>{estate.deceased_name}</TableCell>
+                        <TableCell>
+                          {new Date(estate.deceased_date).toLocaleDateString('no-NO')}
+                        </TableCell>
+                        <TableCell>{estate.deceased_id_number}</TableCell>
+                      </TableRow>
+                    ))}
+                    {estates.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-4">
+                          Ingen aktive bo
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Progress Section */}
           <Card>
             <CardHeader>
