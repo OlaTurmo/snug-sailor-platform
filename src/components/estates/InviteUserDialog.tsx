@@ -29,6 +29,7 @@ import * as z from "zod";
 import { supabase } from "@/lib/supabase";
 import { useState } from "react";
 import { Loader2, UserPlus } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
   email: z.string().email("Ugyldig e-postadresse"),
@@ -44,6 +45,7 @@ interface InviteUserDialogProps {
 export function InviteUserDialog({ estateId }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -53,41 +55,72 @@ export function InviteUserDialog({ estateId }: InviteUserDialogProps) {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (!user) {
+      console.error("No authenticated user found");
+      toast({
+        title: "Feil",
+        description: "Du må være logget inn for å invitere brukere",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      console.log("Starting invitation process...", { estateId, ...values });
+      console.log("Starting invitation process...", { estateId, ...values, currentUser: user.id });
       
-      // Check if estate exists
+      // Check if estate exists and user has permission
       const { data: estate, error: estateError } = await supabase
         .from("estates")
-        .select("id")
+        .select("id, user_id")
         .eq("id", estateId)
         .single();
 
       if (estateError) {
         console.error("Error checking estate:", estateError);
-        throw new Error("Could not verify estate");
+        throw new Error("Kunne ikke verifisere boet");
       }
 
       if (!estate) {
         console.error("Estate not found:", estateId);
-        throw new Error("Estate not found");
+        throw new Error("Boet ble ikke funnet");
+      }
+
+      // Check if user is estate owner or admin
+      const { data: memberData, error: memberError } = await supabase
+        .from("estate_members")
+        .select("role")
+        .eq("estate_id", estateId)
+        .eq("user_id", user.id)
+        .single();
+
+      console.log("Member check result:", { memberData, memberError });
+
+      const isOwner = estate.user_id === user.id;
+      const isAdmin = memberData?.role === "administrator";
+
+      if (!isOwner && !isAdmin) {
+        console.error("User lacks permission:", { isOwner, isAdmin, userId: user.id });
+        throw new Error("Du har ikke tillatelse til å invitere brukere til dette boet");
       }
 
       // Create invitation
-      const { error: inviteError } = await supabase
+      const { data: invitation, error: inviteError } = await supabase
         .from("estate_invitations")
         .insert({
           estate_id: estateId,
           email: values.email,
           role: values.role,
-        });
+          invited_by: user.id,
+        })
+        .select()
+        .single();
 
       if (inviteError) {
         console.error("Error creating invitation:", inviteError);
-        throw inviteError;
+        throw new Error(inviteError.message);
       }
 
-      console.log("Invitation created successfully");
+      console.log("Invitation created successfully:", invitation);
       
       toast({
         title: "Invitasjon sendt",
