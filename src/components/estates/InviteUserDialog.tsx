@@ -54,16 +54,41 @@ export function InviteUserDialog({ estateId }: InviteUserDialogProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      console.log("Sending invitation...", { estateId, ...values });
+      console.log("Starting invitation process...", { estateId, ...values });
       
-      const { error } = await supabase.from("estate_invitations").insert({
-        estate_id: estateId,
-        email: values.email,
-        role: values.role,
-      });
+      // Check if estate exists
+      const { data: estate, error: estateError } = await supabase
+        .from("estates")
+        .select("id")
+        .eq("id", estateId)
+        .single();
 
-      if (error) throw error;
+      if (estateError) {
+        console.error("Error checking estate:", estateError);
+        throw new Error("Could not verify estate");
+      }
 
+      if (!estate) {
+        console.error("Estate not found:", estateId);
+        throw new Error("Estate not found");
+      }
+
+      // Create invitation
+      const { error: inviteError } = await supabase
+        .from("estate_invitations")
+        .insert({
+          estate_id: estateId,
+          email: values.email,
+          role: values.role,
+        });
+
+      if (inviteError) {
+        console.error("Error creating invitation:", inviteError);
+        throw inviteError;
+      }
+
+      console.log("Invitation created successfully");
+      
       toast({
         title: "Invitasjon sendt",
         description: `Invitasjon sendt til ${values.email}`,
@@ -72,10 +97,10 @@ export function InviteUserDialog({ estateId }: InviteUserDialogProps) {
       setOpen(false);
       form.reset();
     } catch (error) {
-      console.error("Error sending invitation:", error);
+      console.error("Error in invitation process:", error);
       toast({
         title: "Feil ved sending av invitasjon",
-        description: "Kunne ikke sende invitasjonen. Prøv igjen senere.",
+        description: error instanceof Error ? error.message : "Kunne ikke sende invitasjonen. Prøv igjen senere.",
         variant: "destructive",
       });
     }
