@@ -48,65 +48,66 @@ const Oversikt = () => {
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log('Fetching tasks, notifications, and estates');
-        
-        // Fetch tasks
-        const { data: tasksData, error: tasksError } = await supabase
-          .from('tasks')
-          .select(`
-            id,
-            title,
-            status,
-            deadline,
-            assigned_to
-          `)
-          .order('created_at', { ascending: false });
+  const fetchData = async () => {
+    try {
+      console.log('Fetching tasks, notifications, and estates');
+      
+      // Fetch tasks
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select(`
+          id,
+          title,
+          status,
+          deadline,
+          assigned_to
+        `)
+        .order('created_at', { ascending: false });
 
-        if (tasksError) throw tasksError;
-        
-        // Fetch notifications
-        const { data: notificationsData, error: notificationsError } = await supabase
-          .from('notifications')
-          .select('*')
-          .eq('user_id', user?.id)
-          .order('created_at', { ascending: false });
+      if (tasksError) throw tasksError;
+      
+      // Fetch notifications
+      const { data: notificationsData, error: notificationsError } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
 
-        if (notificationsError) throw notificationsError;
+      if (notificationsError) throw notificationsError;
 
-        // Fetch estates
-        const { data: estatesData, error: estatesError } = await supabase
-          .from('estates')
-          .select('*')
-          .order('created_at', { ascending: false });
+      // Fetch estates
+      const { data: estatesData, error: estatesError } = await supabase
+        .from('estates')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (estatesError) throw estatesError;
+      if (estatesError) throw estatesError;
 
-        setTasks(tasksData || []);
-        setNotifications(notificationsData || []);
-        setEstates(estatesData || []);
-        
-        // Calculate progress based on completed tasks
-        if (tasksData) {
-          const completedTasks = tasksData.filter(task => task.status === 'completed').length;
-          const totalTasks = tasksData.length;
-          setProgress(totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0);
-        }
-
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: "Feil ved lasting av data",
-          description: "Kunne ikke laste inn data.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
+      console.log('Fetched estates:', estatesData);
+      setTasks(tasksData || []);
+      setNotifications(notificationsData || []);
+      setEstates(estatesData || []);
+      
+      // Calculate progress based on completed tasks
+      if (tasksData) {
+        const completedTasks = tasksData.filter(task => task.status === 'completed').length;
+        const totalTasks = tasksData.length;
+        setProgress(totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0);
       }
-    };
 
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Feil ved lasting av data",
+        description: "Kunne ikke laste inn data.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, [user?.id, toast]);
 
@@ -142,7 +143,7 @@ const Oversikt = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Oversikt</h1>
             <div className="flex gap-2">
-              <AddEstateDialog />
+              <AddEstateDialog onEstateCreated={fetchData} />
             </div>
           </div>
 

@@ -35,7 +35,11 @@ const formSchema = z.object({
     .regex(/^\d+$/, "Fødselsnummer må kun inneholde tall"),
 });
 
-export function AddEstateDialog() {
+interface AddEstateDialogProps {
+  onEstateCreated?: () => void;
+}
+
+export function AddEstateDialog({ onEstateCreated }: AddEstateDialogProps) {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -51,6 +55,7 @@ export function AddEstateDialog() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      console.log("Creating new estate with values:", values);
       const { error } = await supabase.from("estates").insert({
         name: values.name,
         deceased_name: values.deceased_name,
@@ -61,6 +66,7 @@ export function AddEstateDialog() {
 
       if (error) throw error;
 
+      console.log("Estate created successfully");
       toast({
         title: "Bo opprettet",
         description: "Boet ble opprettet successfully.",
@@ -68,6 +74,9 @@ export function AddEstateDialog() {
       
       setOpen(false);
       form.reset();
+      if (onEstateCreated) {
+        onEstateCreated();
+      }
     } catch (error) {
       console.error("Error creating estate:", error);
       toast({
