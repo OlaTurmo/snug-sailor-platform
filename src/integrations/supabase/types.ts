@@ -169,6 +169,82 @@ export type Database = {
           },
         ]
       }
+      estate_invitations: {
+        Row: {
+          created_at: string
+          email: string
+          estate_id: string | null
+          expires_at: string
+          id: string
+          invited_by: string | null
+          role: Database["public"]["Enums"]["estate_member_role"]
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          estate_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["estate_member_role"]
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          estate_id?: string | null
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          role?: Database["public"]["Enums"]["estate_member_role"]
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_invitations_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estate_members: {
+        Row: {
+          created_at: string
+          estate_id: string | null
+          id: string
+          role: Database["public"]["Enums"]["estate_member_role"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          estate_id?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["estate_member_role"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          estate_id?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["estate_member_role"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estate_members_estate_id_fkey"
+            columns: ["estate_id"]
+            isOneToOne: false
+            referencedRelation: "estates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       estate_projects: {
         Row: {
           created_at: string
@@ -541,7 +617,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      estate_member_role: "viewer" | "editor" | "administrator"
     }
     CompositeTypes: {
       [_ in never]: never

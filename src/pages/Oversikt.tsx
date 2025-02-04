@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Check, X, ArrowRight, List, Calendar, User, Upload, Send, Divide, Bell } from "lucide-react";
 import { AddEstateDialog } from "@/components/estates/AddEstateDialog";
+import { InviteUserDialog } from "@/components/estates/InviteUserDialog";
 
 interface Task {
   id: string;
@@ -140,7 +141,9 @@ const Oversikt = () => {
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold">Oversikt</h1>
-            <AddEstateDialog />
+            <div className="flex gap-2">
+              <AddEstateDialog />
+            </div>
           </div>
 
           {/* Estates Section */}
@@ -157,6 +160,7 @@ const Oversikt = () => {
                       <TableHead>Avdød</TableHead>
                       <TableHead>Dødsdato</TableHead>
                       <TableHead>Fødselsnummer</TableHead>
+                      <TableHead>Handlinger</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -168,11 +172,14 @@ const Oversikt = () => {
                           {new Date(estate.deceased_date).toLocaleDateString('no-NO')}
                         </TableCell>
                         <TableCell>{estate.deceased_id_number}</TableCell>
+                        <TableCell>
+                          <InviteUserDialog estateId={estate.id} />
+                        </TableCell>
                       </TableRow>
                     ))}
                     {estates.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-4">
+                        <TableCell colSpan={5} className="text-center py-4">
                           Ingen aktive bo
                         </TableCell>
                       </TableRow>
