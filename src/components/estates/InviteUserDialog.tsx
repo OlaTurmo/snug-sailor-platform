@@ -68,40 +68,25 @@ export function InviteUserDialog({ estateId }: InviteUserDialogProps) {
     try {
       console.log("Starting invitation process...", { estateId, ...values, currentUser: user.id });
       
-      // Check if estate exists and user has permission
-      const { data: estate, error: estateError } = await supabase
-        .from("estates")
-        .select("id, user_id")
-        .eq("id", estateId)
-        .single();
+      // First check if the user has permission to invite
+      console.log("Checking user permissions...");
+      const { data: permissions, error: permissionsError } = await supabase
+        .rpc('can_manage_estate_members', {
+          estate_id: estateId,
+          checking_user_id: user.id
+        });
 
-      if (estateError) {
-        console.error("Error checking estate:", estateError);
-        throw new Error("Kunne ikke verifisere boet");
+      if (permissionsError) {
+        console.error("Permission check failed:", permissionsError);
+        throw new Error("Kunne ikke verifisere tillatelser");
       }
 
-      if (!estate) {
-        console.error("Estate not found:", estateId);
-        throw new Error("Boet ble ikke funnet");
-      }
-
-      // Check if user is estate owner or admin
-      const { data: memberData, error: memberError } = await supabase
-        .from("estate_members")
-        .select("role")
-        .eq("estate_id", estateId)
-        .eq("user_id", user.id)
-        .single();
-
-      console.log("Member check result:", { memberData, memberError });
-
-      const isOwner = estate.user_id === user.id;
-      const isAdmin = memberData?.role === "administrator";
-
-      if (!isOwner && !isAdmin) {
-        console.error("User lacks permission:", { isOwner, isAdmin, userId: user.id });
+      if (!permissions) {
+        console.error("User lacks permission:", { userId: user.id, estateId });
         throw new Error("Du har ikke tillatelse til å invitere brukere til dette boet");
       }
+
+      console.log("Permission check passed, creating invitation...");
 
       // Create invitation
       const { data: invitation, error: inviteError } = await supabase
