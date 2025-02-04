@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -10,13 +11,13 @@ import NotFound from "@/pages/NotFound";
 import Contact from "@/pages/Contact";
 import HowItWorks from "@/pages/HowItWorks";
 import Pricing from "@/pages/Pricing";
+import AboutUs from "@/pages/AboutUs";
 import TaskManagement from "@/pages/TaskManagement";
 import DocumentManagement from "@/pages/DocumentManagement";
 import CollaborationTools from "@/pages/CollaborationTools";
 import AssetsLiabilities from "@/pages/AssetsLiabilities";
 import Oversikt from "@/pages/Oversikt";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
-import "./App.css";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const isAllowed = useProtectedRoute();
@@ -35,6 +36,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/about-us" element={<AboutUs />} />
 
           {/* Protected routes */}
           <Route

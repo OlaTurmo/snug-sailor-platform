@@ -1,3 +1,4 @@
+
 import { Twitter, Facebook, Instagram } from "lucide-react";
 
 export const Footer = () => {
@@ -22,7 +23,7 @@ export const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">Selskap</h4>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-600 hover:text-gray-900">Om oss</a></li>
+              <li><a href="/about-us" className="text-gray-600 hover:text-gray-900">Om oss</a></li>
               <li><a href="#" className="text-gray-600 hover:text-gray-900">Blogg</a></li>
               <li><a href="#" className="text-gray-600 hover:text-gray-900">Karriere</a></li>
             </ul>
