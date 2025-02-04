@@ -53,6 +53,7 @@ const Oversikt = () => {
     if (!user) {
       console.log('No user found, skipping data fetch');
       setError('Ingen bruker funnet. Vennligst logg inn.');
+      setIsLoading(false);
       return;
     }
 
@@ -66,7 +67,6 @@ const Oversikt = () => {
       const { data: estatesData, error: estatesError } = await supabase
         .from('estates')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (estatesError) {
@@ -80,6 +80,7 @@ const Oversikt = () => {
       }
       
       console.log('Estates fetched successfully:', estatesData);
+      setEstates(estatesData || []);
       
       // Fetch tasks with detailed error logging
       console.log('Fetching tasks...');
@@ -100,6 +101,7 @@ const Oversikt = () => {
       }
 
       console.log('Tasks fetched successfully:', tasksData);
+      setTasks(tasksData || []);
       
       // Fetch notifications with detailed error logging
       console.log('Fetching notifications...');
@@ -120,10 +122,6 @@ const Oversikt = () => {
       }
 
       console.log('Notifications fetched successfully:', notificationsData);
-
-      // Update state with fetched data
-      setEstates(estatesData || []);
-      setTasks(tasksData || []);
       setNotifications(notificationsData || []);
       
       // Calculate progress based on completed tasks
@@ -133,6 +131,7 @@ const Oversikt = () => {
         setProgress(totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0);
       }
 
+      setIsLoading(false);
     } catch (error) {
       console.error('Error in fetchData:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
@@ -142,7 +141,6 @@ const Oversikt = () => {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -157,6 +155,7 @@ const Oversikt = () => {
     } else {
       console.log('No user found in useEffect');
       setError('Vennligst logg inn for å se denne siden');
+      setIsLoading(false);
     }
   }, [user]);
 

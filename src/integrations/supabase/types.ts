@@ -614,7 +614,13 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      can_view_estate: {
+        Args: {
+          estate_id: string
+          user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       estate_member_role: "viewer" | "editor" | "administrator"
