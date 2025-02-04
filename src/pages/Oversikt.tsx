@@ -47,21 +47,38 @@ const Oversikt = () => {
   const [estates, setEstates] = useState<Estate[]>([]);
   const [progress, setProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
+    if (!user) {
+      console.log('No user found, skipping data fetch');
+      return;
+    }
+
     try {
-      console.log('Fetching tasks, notifications, and estates');
+      setIsLoading(true);
+      setError(null);
+      console.log('Fetching data for user:', user.id);
+      
+      // Fetch estates
+      const { data: estatesData, error: estatesError } = await supabase
+        .from('estates')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (estatesError) {
+        console.error('Error fetching estates:', estatesError);
+        throw estatesError;
+      }
+      
+      console.log('Fetched estates:', estatesData);
       
       // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select(`
-          id,
-          title,
-          status,
-          deadline,
-          assigned_to
-        `)
+        .select('*')
+        .or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (tasksError) throw tasksError;
@@ -70,23 +87,14 @@ const Oversikt = () => {
       const { data: notificationsData, error: notificationsError } = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (notificationsError) throw notificationsError;
 
-      // Fetch estates
-      const { data: estatesData, error: estatesError } = await supabase
-        .from('estates')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (estatesError) throw estatesError;
-
-      console.log('Fetched estates:', estatesData);
+      setEstates(estatesData || []);
       setTasks(tasksData || []);
       setNotifications(notificationsData || []);
-      setEstates(estatesData || []);
       
       // Calculate progress based on completed tasks
       if (tasksData) {
@@ -97,9 +105,10 @@ const Oversikt = () => {
 
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError('Det oppstod en feil ved lasting av data. Vennligst prøv igjen senere.');
       toast({
         title: "Feil ved lasting av data",
-        description: "Kunne ikke laste inn data.",
+        description: "Kunne ikke laste inn data. Vennligst prøv igjen senere.",
         variant: "destructive",
       });
     } finally {
@@ -108,8 +117,11 @@ const Oversikt = () => {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [user?.id, toast]);
+    if (user) {
+      console.log('User authenticated, fetching data');
+      fetchData();
+    }
+  }, [user]);
 
   const handleUploadDocument = () => {
     // TODO: Implement document upload
@@ -147,49 +159,69 @@ const Oversikt = () => {
             </div>
           </div>
 
-          {/* Estates Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Aktive bo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Navn på bo</TableHead>
-                      <TableHead>Avdød</TableHead>
-                      <TableHead>Dødsdato</TableHead>
-                      <TableHead>Fødselsnummer</TableHead>
-                      <TableHead>Handlinger</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {estates.map((estate) => (
-                      <TableRow key={estate.id}>
-                        <TableCell>{estate.name}</TableCell>
-                        <TableCell>{estate.deceased_name}</TableCell>
-                        <TableCell>
-                          {new Date(estate.deceased_date).toLocaleDateString('no-NO')}
-                        </TableCell>
-                        <TableCell>{estate.deceased_id_number}</TableCell>
-                        <TableCell>
-                          <InviteUserDialog estateId={estate.id} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {estates.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          Ingen aktive bo
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Laster inn data...</p>
+            </div>
+          ) : error ? (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-red-600">{error}</p>
+                <Button 
+                  onClick={fetchData} 
+                  variant="outline" 
+                  className="mx-auto mt-4 block"
+                >
+                  Prøv igjen
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Estates Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Aktive bo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Navn på bo</TableHead>
+                          <TableHead>Avdød</TableHead>
+                          <TableHead>Dødsdato</TableHead>
+                          <TableHead>Fødselsnummer</TableHead>
+                          <TableHead>Handlinger</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {estates.map((estate) => (
+                          <TableRow key={estate.id}>
+                            <TableCell>{estate.name}</TableCell>
+                            <TableCell>{estate.deceased_name}</TableCell>
+                            <TableCell>
+                              {new Date(estate.deceased_date).toLocaleDateString('no-NO')}
+                            </TableCell>
+                            <TableCell>{estate.deceased_id_number}</TableCell>
+                            <TableCell>
+                              <InviteUserDialog estateId={estate.id} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {estates.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-4">
+                              Ingen aktive bo
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
 
           {/* Progress Section */}
           <Card>
@@ -321,7 +353,8 @@ const Oversikt = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
+            </>
+          )}
         </div>
       </main>
     </div>
