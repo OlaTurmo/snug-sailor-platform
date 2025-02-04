@@ -52,15 +52,17 @@ const Oversikt = () => {
   const fetchData = async () => {
     if (!user) {
       console.log('No user found, skipping data fetch');
+      setError('Ingen bruker funnet. Vennligst logg inn.');
       return;
     }
 
     try {
       setIsLoading(true);
       setError(null);
-      console.log('Fetching data for user:', user.id);
+      console.log('Starting data fetch for user:', user.id);
       
-      // Fetch estates
+      // Fetch estates with detailed error logging
+      console.log('Fetching estates...');
       const { data: estatesData, error: estatesError } = await supabase
         .from('estates')
         .select('*')
@@ -68,30 +70,58 @@ const Oversikt = () => {
         .order('created_at', { ascending: false });
 
       if (estatesError) {
-        console.error('Error fetching estates:', estatesError);
-        throw estatesError;
+        console.error('Error fetching estates:', {
+          error: estatesError,
+          message: estatesError.message,
+          details: estatesError.details,
+          hint: estatesError.hint
+        });
+        throw new Error(`Failed to fetch estates: ${estatesError.message}`);
       }
       
-      console.log('Fetched estates:', estatesData);
+      console.log('Estates fetched successfully:', estatesData);
       
-      // Fetch tasks
+      // Fetch tasks with detailed error logging
+      console.log('Fetching tasks...');
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
         .or(`created_by.eq.${user.id},assigned_to.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
-      if (tasksError) throw tasksError;
+      if (tasksError) {
+        console.error('Error fetching tasks:', {
+          error: tasksError,
+          message: tasksError.message,
+          details: tasksError.details,
+          hint: tasksError.hint
+        });
+        throw new Error(`Failed to fetch tasks: ${tasksError.message}`);
+      }
+
+      console.log('Tasks fetched successfully:', tasksData);
       
-      // Fetch notifications
+      // Fetch notifications with detailed error logging
+      console.log('Fetching notifications...');
       const { data: notificationsData, error: notificationsError } = await supabase
         .from('notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (notificationsError) throw notificationsError;
+      if (notificationsError) {
+        console.error('Error fetching notifications:', {
+          error: notificationsError,
+          message: notificationsError.message,
+          details: notificationsError.details,
+          hint: notificationsError.hint
+        });
+        throw new Error(`Failed to fetch notifications: ${notificationsError.message}`);
+      }
 
+      console.log('Notifications fetched successfully:', notificationsData);
+
+      // Update state with fetched data
       setEstates(estatesData || []);
       setTasks(tasksData || []);
       setNotifications(notificationsData || []);
@@ -104,11 +134,12 @@ const Oversikt = () => {
       }
 
     } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Det oppstod en feil ved lasting av data. Vennligst prøv igjen senere.');
+      console.error('Error in fetchData:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(`Det oppstod en feil ved lasting av data: ${errorMessage}`);
       toast({
         title: "Feil ved lasting av data",
-        description: "Kunne ikke laste inn data. Vennligst prøv igjen senere.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -117,9 +148,15 @@ const Oversikt = () => {
   };
 
   useEffect(() => {
+    console.log('Oversikt component mounted');
+    console.log('Current user state:', user);
+    
     if (user) {
-      console.log('User authenticated, fetching data');
+      console.log('User is authenticated, initiating data fetch');
       fetchData();
+    } else {
+      console.log('No user found in useEffect');
+      setError('Vennligst logg inn for å se denne siden');
     }
   }, [user]);
 
