@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ user: User } | undefined>;  // Updated return type
+  login: (email: string, password: string) => Promise<{ user: User } | undefined>;
   logout: () => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
@@ -23,12 +23,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('Attempting to fetch profile for user ID:', supabaseUserId);
     
     try {
-      // First, verify the user ID is valid
       if (!supabaseUserId) {
+        console.error('Invalid user ID provided');
         throw new Error('Invalid user ID provided');
       }
 
-      // Fetch the profile with detailed logging
       console.log('Making database query to profiles table...');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -36,7 +35,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', supabaseUserId)
         .single();
 
-      // Handle profile fetch errors
       if (profileError) {
         console.error('Profile fetch failed:', {
           message: profileError.message,
@@ -47,7 +45,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw profileError;
       }
 
-      // Validate profile data
       if (!profile) {
         console.error('No profile data returned for ID:', supabaseUserId);
         throw new Error('Profile not found');
@@ -55,7 +52,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log('Profile data retrieved successfully:', profile);
 
-      // Construct user object with strict type checking
       const userData: User = {
         id: supabaseUserId,
         email: profile.email,
@@ -67,21 +63,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
 
       console.log('Setting user state with validated data:', userData);
-      
-      // Update user state
       setUser(userData);
       console.log('User state updated successfully');
-      
-      return userData; // Return the user data for immediate use if needed
+      return userData;
       
     } catch (error) {
-      console.error('Profile fetch process failed:', {
-        error,
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      });
+      console.error('Profile fetch process failed:', error);
+      setUser(null);
       throw error;
     } finally {
+      setIsLoading(false);
       console.log('=== Profile Fetch Process End ===');
     }
   };
@@ -229,6 +220,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const checkSession = async () => {
       console.log('=== Session Check Start ===');
       try {
@@ -239,17 +232,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
         
-        if (session?.user) {
+        if (session?.user && mounted) {
           console.log('Active session found:', session.user.id);
           await updateUserState(session.user.id);
         } else {
           console.log('No active session found');
-          setUser(null);
+          if (mounted) setUser(null);
         }
       } catch (error) {
         console.error('Session check error:', error);
       } finally {
-        setIsLoading(false);
+        if (mounted) setIsLoading(false);
         console.log('=== Session Check End ===');
       }
     };
@@ -261,22 +254,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Event type:', event);
       console.log('Session present:', !!session);
       
-      if (event === 'SIGNED_IN' && session?.user) {
+      if (event === 'SIGNED_IN' && session?.user && mounted) {
         console.log('Processing SIGNED_IN event for user:', session.user.id);
         try {
-          const userData = await updateUserState(session.user.id);
-          console.log('User state updated after sign in:', userData);
+          await updateUserState(session.user.id);
         } catch (error) {
           console.error('Failed to update user state after sign in:', error);
         }
-      } else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT' && mounted) {
         console.log('User signed out, clearing user state');
         setUser(null);
       }
-      console.log('=== Auth State Change Event End ===');
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
