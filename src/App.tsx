@@ -12,6 +12,7 @@ import Contact from "@/pages/Contact";
 import HowItWorks from "@/pages/HowItWorks";
 import Pricing from "@/pages/Pricing";
 import AboutUs from "@/pages/AboutUs";
+import Blog from "@/pages/Blog";
 import TaskManagement from "@/pages/TaskManagement";
 import DocumentManagement from "@/pages/DocumentManagement";
 import CollaborationTools from "@/pages/CollaborationTools";
@@ -37,6 +38,7 @@ function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/blog" element={<Blog />} />
 
           {/* Protected routes */}
           <Route
