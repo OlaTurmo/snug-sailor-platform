@@ -23,7 +23,15 @@ const Blog = () => {
 
         if (error) throw error;
 
-        setPosts(data);
+        // Type check and transform the data
+        const typedPosts = data.map(post => {
+          if (post.status !== 'published' && post.status !== 'draft') {
+            post.status = 'draft'; // Default to draft if status is invalid
+          }
+          return post as BlogPost;
+        });
+
+        setPosts(typedPosts);
       } catch (error) {
         console.error('Error fetching blog posts:', error);
         toast({
@@ -93,3 +101,4 @@ const Blog = () => {
 };
 
 export default Blog;
+

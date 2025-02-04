@@ -11,3 +11,4 @@ export type BlogPost = {
   status: 'published' | 'draft';
   slug: string;
 };
+
