@@ -1,3 +1,4 @@
+
 import { Navbar } from "@/components/Navbar";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -27,6 +28,7 @@ interface Task {
   created_by: string | null;
   created_at: string | null;
   updated_at: string | null;
+  project_id: string | null;
 }
 
 const TaskManagement = () => {
@@ -40,14 +42,38 @@ const TaskManagement = () => {
     deadline: "",
   });
 
-  const { data: tasks, isLoading, error } = useQuery({
-    queryKey: ["tasks"],
+  // First, fetch available projects for the user
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
     queryFn: async () => {
-      console.log('Fetching tasks...');
+      console.log('Fetching projects for user:', user?.id);
+      const { data, error } = await supabase
+        .from("estate_projects")
+        .select("*")
+        .or(`responsible_heir_id.eq.${user?.id},id.in.(select project_id from project_users where user_id = ${user?.id})`);
+
+      if (error) {
+        console.error('Error fetching projects:', error);
+        throw error;
+      }
+      
+      console.log('Projects fetched:', data);
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Use the first project as default if available
+  const defaultProjectId = projects?.[0]?.id;
+
+  const { data: tasks, isLoading, error } = useQuery({
+    queryKey: ["tasks", defaultProjectId],
+    queryFn: async () => {
+      console.log('Fetching tasks for project:', defaultProjectId);
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
-        .or(`created_by.eq.${user?.id},assigned_to.eq.${user?.id}`)
+        .eq('project_id', defaultProjectId)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -55,10 +81,10 @@ const TaskManagement = () => {
         throw error;
       }
       
-      console.log('Tasks fetched successfully:', data);
+      console.log('Tasks fetched:', data);
       return data as Task[];
     },
-    enabled: !!user?.id,
+    enabled: !!defaultProjectId && !!user?.id,
   });
 
   const createTaskMutation = useMutation({
@@ -70,7 +96,8 @@ const TaskManagement = () => {
           ...taskData,
           status: 'pending',
           created_by: user?.id,
-          assigned_to: user?.id // Initially assign to self
+          assigned_to: user?.id,
+          project_id: defaultProjectId
         }])
         .select()
         .single();
@@ -86,15 +113,15 @@ const TaskManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast({
-        title: "Task created successfully",
-        description: "The new task has been added to the list.",
+        title: "Oppgave opprettet",
+        description: "Den nye oppgaven har blitt lagt til.",
       });
       setNewTask({ title: "", description: "", deadline: "" });
     },
     onError: (error: Error) => {
       console.error('Task creation error:', error);
       toast({
-        title: "Error creating task",
+        title: "Feil ved opprettelse av oppgave",
         description: error.message,
         variant: "destructive",
       });
@@ -128,14 +155,14 @@ const TaskManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast({
-        title: "Task updated",
-        description: "The task status has been updated.",
+        title: "Oppgave oppdatert",
+        description: "Oppgavestatusen har blitt oppdatert.",
       });
     },
     onError: (error: Error) => {
       console.error('Task update error:', error);
       toast({
-        title: "Error updating task",
+        title: "Feil ved oppdatering av oppgave",
         description: error.message,
         variant: "destructive",
       });
@@ -146,12 +173,22 @@ const TaskManagement = () => {
     e.preventDefault();
     if (!user?.id) {
       toast({
-        title: "Authentication required",
-        description: "Please log in to create tasks.",
+        title: "Autentisering kreves",
+        description: "Vennligst logg inn for å opprette oppgaver.",
         variant: "destructive",
       });
       return;
     }
+    
+    if (!defaultProjectId) {
+      toast({
+        title: "Prosjekt kreves",
+        description: "Du må være tilknyttet et prosjekt for å opprette oppgaver.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createTaskMutation.mutate({
       ...newTask,
       deadline: new Date(newTask.deadline).toISOString(),
@@ -163,7 +200,7 @@ const TaskManagement = () => {
       <div className="min-h-screen bg-gray-50">
         <Navbar />
         <div className="flex flex-col items-center justify-center h-screen">
-          <h1 className="text-2xl font-bold text-red-500 mb-4">Error Loading Tasks</h1>
+          <h1 className="text-2xl font-bold text-red-500 mb-4">Feil ved lasting av oppgaver</h1>
           <p className="text-gray-600">{(error as Error).message}</p>
         </div>
       </div>
@@ -185,12 +222,12 @@ const TaskManagement = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <main className="container mx-auto px-4 pt-24">
-        <h1 className="text-3xl font-bold mb-8">Task Management</h1>
+        <h1 className="text-3xl font-bold mb-8">Oppgavestyring</h1>
 
         <form onSubmit={handleCreateTask} className="mb-8 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
-              placeholder="Task title"
+              placeholder="Oppgavetittel"
               value={newTask.title}
               onChange={(e) =>
                 setNewTask({ ...newTask, title: e.target.value })
@@ -198,7 +235,7 @@ const TaskManagement = () => {
               required
             />
             <Input
-              placeholder="Description"
+              placeholder="Beskrivelse"
               value={newTask.description}
               onChange={(e) =>
                 setNewTask({ ...newTask, description: e.target.value })
@@ -216,25 +253,25 @@ const TaskManagement = () => {
           <Button 
             type="submit" 
             className="w-full md:w-auto"
-            disabled={createTaskMutation.isPending || !user?.id}
+            disabled={createTaskMutation.isPending || !user?.id || !defaultProjectId}
           >
             {createTaskMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <PlusCircle className="mr-2" />
             )}
-            Create Task
+            Opprett oppgave
           </Button>
         </form>
 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead>Tittel</TableHead>
+              <TableHead>Beskrivelse</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Deadline</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>Frist</TableHead>
+              <TableHead>Handlinger</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -244,7 +281,7 @@ const TaskManagement = () => {
                 <TableCell>{task.description}</TableCell>
                 <TableCell>{task.status}</TableCell>
                 <TableCell>
-                  {task.deadline ? new Date(task.deadline).toLocaleString() : 'No deadline'}
+                  {task.deadline ? new Date(task.deadline).toLocaleString('no-NO') : 'Ingen frist'}
                 </TableCell>
                 <TableCell>
                   <select
@@ -258,9 +295,9 @@ const TaskManagement = () => {
                     className="border rounded p-1"
                     disabled={updateTaskStatus.isPending}
                   >
-                    <option value="pending">Pending</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="completed">Completed</option>
+                    <option value="pending">Ikke påbegynt</option>
+                    <option value="in_progress">Pågår</option>
+                    <option value="completed">Fullført</option>
                   </select>
                 </TableCell>
               </TableRow>
@@ -268,7 +305,7 @@ const TaskManagement = () => {
             {(!tasks || tasks.length === 0) && (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-4">
-                  No tasks found. Create your first task above.
+                  Ingen oppgaver funnet. Opprett din første oppgave ovenfor.
                 </TableCell>
               </TableRow>
             )}
@@ -280,3 +317,4 @@ const TaskManagement = () => {
 };
 
 export default TaskManagement;
+

@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Boregnskap() {
   const { user } = useAuth();
@@ -56,8 +57,8 @@ export default function Boregnskap() {
     } catch (error) {
       console.error('Error fetching projects:', error);
       toast({
-        title: "Error",
-        description: "Could not fetch projects",
+        title: "Feil",
+        description: "Kunne ikke hente prosjekter",
         variant: "destructive",
       });
     }
@@ -72,7 +73,10 @@ export default function Boregnskap() {
         .eq('project_id', projectId)
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
 
       console.log('Transactions fetched:', data);
       setTransactions(data || []);
@@ -93,8 +97,8 @@ export default function Boregnskap() {
     } catch (error) {
       console.error("Error fetching transactions:", error);
       toast({
-        title: "Error",
-        description: "Could not fetch financial data",
+        title: "Feil",
+        description: "Kunne ikke hente finansdata",
         variant: "destructive",
       });
     } finally {
@@ -102,184 +106,77 @@ export default function Boregnskap() {
     }
   };
 
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div className="container mx-auto p-4 space-y-6">
-          <h1 className="text-3xl font-bold">Boregnskap</h1>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <div className="h-4 w-[150px] bg-gray-200 animate-pulse rounded" />
-                </CardHeader>
-                <CardContent>
-                  <div className="h-8 w-[100px] bg-gray-200 animate-pulse rounded" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <Navbar />
       <div className="container mx-auto p-4 space-y-6">
         <h1 className="text-3xl font-bold">Boregnskap</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Inntekter fra Salg av Eiendeler</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-green-600">
-                {new Intl.NumberFormat("nb-NO", {
-                  style: "currency",
-                  currency: "NOK",
-                }).format(
-                  transactions
-                    .filter(
-                      (t) =>
-                        t.type === "income" &&
-                        t.category === "sale" &&
-                        t.approval_status === "approved"
-                    )
-                    .reduce((sum, t) => sum + Number(t.amount), 0)
-                )}
-              </p>
-            </CardContent>
-          </Card>
+        <Select
+          value={selectedProject || ""}
+          onValueChange={(value) => {
+            setSelectedProject(value);
+            fetchTransactions(value);
+          }}
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Velg prosjekt" />
+          </SelectTrigger>
+          <SelectContent>
+            {projects.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Totale Booppgjørskostnader</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-red-600">
-                {new Intl.NumberFormat("nb-NO", {
-                  style: "currency",
-                  currency: "NOK",
-                }).format(
-                  transactions
-                    .filter(
-                      (t) =>
-                        t.type === "expense" &&
-                        t.approval_status === "approved"
-                    )
-                    .reduce((sum, t) => sum + Number(t.amount), 0)
-                )}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        {loading ? (
+          <p>Laster inn data...</p>
+        ) : (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Inntekter</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-green-600">
+                  {new Intl.NumberFormat("nb-NO", {
+                    style: "currency",
+                    currency: "NOK",
+                  }).format(summary.totalIncome)}
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Budsjett og Utgiftsoversikt</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {["legal", "tax", "funeral", "other"].map((category) => {
-                const amount = transactions
-                  .filter(
-                    (t) =>
-                      t.type === "expense" &&
-                      t.category === category &&
-                      t.approval_status === "approved"
-                  )
-                  .reduce((sum, t) => sum + Number(t.amount), 0);
-                
-                const pendingAmount = transactions
-                  .filter(
-                    (t) =>
-                      t.type === "expense" &&
-                      t.category === category &&
-                      t.approval_status === "pending"
-                  )
-                  .reduce((sum, t) => sum + Number(t.amount), 0);
+            <Card>
+              <CardHeader>
+                <CardTitle>Utgifter</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-red-600">
+                  {new Intl.NumberFormat("nb-NO", {
+                    style: "currency",
+                    currency: "NOK",
+                  }).format(summary.totalExpenses)}
+                </p>
+              </CardContent>
+            </Card>
 
-                return (
-                  <div
-                    key={category}
-                    className="flex flex-col space-y-2 p-4 border rounded-lg"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">
-                        {category === "legal"
-                          ? "Advokatkostnader"
-                          : category === "tax"
-                          ? "Skatter"
-                          : category === "funeral"
-                          ? "Begravelseskostnader"
-                          : "Andre kostnader"}
-                      </span>
-                      <div className="text-right">
-                        <span className={`font-bold ${amount > 0 ? "text-red-600" : "text-gray-500"}`}>
-                          {new Intl.NumberFormat("nb-NO", {
-                            style: "currency",
-                            currency: "NOK",
-                          }).format(amount)}
-                        </span>
-                        {pendingAmount > 0 && (
-                          <div className="text-sm text-amber-600">
-                            Ventende godkjenning: {new Intl.NumberFormat("nb-NO", {
-                              style: "currency",
-                              currency: "NOK",
-                            }).format(pendingAmount)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Endelig Arveoppgjør</CardTitle>
-            <CardDescription>
-              Netto verdi tilgjengelig for fordeling
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-3xl font-bold text-primary">
-                {new Intl.NumberFormat("nb-NO", {
-                  style: "currency",
-                  currency: "NOK",
-                }).format(summary.netBalance)}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold mb-2">Totale Inntekter</h4>
-                  <p className="text-green-600">
-                    {new Intl.NumberFormat("nb-NO", {
-                      style: "currency",
-                      currency: "NOK",
-                    }).format(summary.totalIncome)}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Totale Utgifter</h4>
-                  <p className="text-red-600">
-                    {new Intl.NumberFormat("nb-NO", {
-                      style: "currency",
-                      currency: "NOK",
-                    }).format(summary.totalExpenses)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Netto Verdi</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className={`text-2xl font-bold ${summary.netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {new Intl.NumberFormat("nb-NO", {
+                    style: "currency",
+                    currency: "NOK",
+                  }).format(summary.netBalance)}
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     </>
   );
