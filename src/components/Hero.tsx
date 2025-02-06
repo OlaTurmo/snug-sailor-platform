@@ -5,7 +5,7 @@ export const Hero = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="pt-24 pb-20 px-4 bg-gradient-to-b from-[#F5F5DC]/20 to-white">
+    <div className="pt-24 pb-32 px-4 bg-gradient-to-b from-[#F5F5DC]/20 to-white">
       <div className="container mx-auto text-center">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold mb-8 bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] bg-clip-text text-transparent leading-relaxed">
