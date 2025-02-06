@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,32 +13,174 @@ import { AddLiabilityDialog } from "@/components/assets/AddLiabilityDialog";
 import { AssetsList } from "@/components/assets/AssetsList";
 import { LiabilitiesList } from "@/components/assets/LiabilitiesList";
 import { OverviewDashboard } from "@/components/assets/OverviewDashboard";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AssetsLiabilities = () => {
   useProtectedRoute();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [showAddAsset, setShowAddAsset] = useState(false);
   const [showAddLiability, setShowAddLiability] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [liabilities, setLiabilities] = useState<Liability[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleAddAsset = (asset: Asset) => {
-    setAssets([...assets, asset]);
-    setShowAddAsset(false);
-    toast({
-      title: "Eiendel lagt til",
-      description: "Eiendelen har blitt lagt til i oversikten.",
-    });
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return;
+
+      try {
+        // First, get the estate project for this user
+        const { data: projectData, error: projectError } = await supabase
+          .from('estate_projects')
+          .select('id')
+          .eq('responsible_heir_id', user.id)
+          .maybeSingle();
+
+        if (projectError) {
+          console.error('Error fetching project:', projectError);
+          return;
+        }
+
+        if (!projectData) {
+          console.log('No project found for user');
+          return;
+        }
+
+        // Fetch assets
+        const { data: assetsData, error: assetsError } = await supabase
+          .from('assets')
+          .select('*')
+          .eq('estate_project_id', projectData.id);
+
+        if (assetsError) {
+          console.error('Error fetching assets:', assetsError);
+        } else {
+          setAssets(assetsData || []);
+        }
+
+        // Fetch liabilities
+        const { data: liabilitiesData, error: liabilitiesError } = await supabase
+          .from('liabilities')
+          .select('*')
+          .eq('estate_project_id', projectData.id);
+
+        if (liabilitiesError) {
+          console.error('Error fetching liabilities:', liabilitiesError);
+        } else {
+          setLiabilities(liabilitiesData || []);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  const handleAddAsset = async (asset: Asset) => {
+    try {
+      // Get the project ID first
+      const { data: projectData } = await supabase
+        .from('estate_projects')
+        .select('id')
+        .eq('responsible_heir_id', user?.id)
+        .maybeSingle();
+
+      if (!projectData) {
+        toast({
+          title: "Feil",
+          description: "Kunne ikke finne prosjekt-ID.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('assets')
+        .insert([{ ...asset, estate_project_id: projectData.id }])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setAssets([...assets, data]);
+      setShowAddAsset(false);
+      toast({
+        title: "Eiendel lagt til",
+        description: "Eiendelen har blitt lagt til i oversikten.",
+      });
+    } catch (error) {
+      console.error('Error adding asset:', error);
+      toast({
+        title: "Feil",
+        description: "Kunne ikke legge til eiendel.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleAddLiability = (liability: Liability) => {
-    setLiabilities([...liabilities, liability]);
-    setShowAddLiability(false);
-    toast({
-      title: "Gjeld lagt til",
-      description: "Gjelden har blitt lagt til i oversikten.",
-    });
+  const handleAddLiability = async (liability: Liability) => {
+    try {
+      // Get the project ID first
+      const { data: projectData } = await supabase
+        .from('estate_projects')
+        .select('id')
+        .eq('responsible_heir_id', user?.id)
+        .maybeSingle();
+
+      if (!projectData) {
+        toast({
+          title: "Feil",
+          description: "Kunne ikke finne prosjekt-ID.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('liabilities')
+        .insert([{ ...liability, estate_project_id: projectData.id }])
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setLiabilities([...liabilities, data]);
+      setShowAddLiability(false);
+      toast({
+        title: "Gjeld lagt til",
+        description: "Gjelden har blitt lagt til i oversikten.",
+      });
+    } catch (error) {
+      console.error('Error adding liability:', error);
+      toast({
+        title: "Feil",
+        description: "Kunne ikke legge til gjeld.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="container mx-auto px-4 pt-24">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
