@@ -1,20 +1,17 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, MinusCircle, DollarSign, CreditCard, House } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { Asset, AssetType, Liability, LiabilityType } from "@/types/finance";
+import { Asset, Liability } from "@/types/finance";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
 import { AddLiabilityDialog } from "@/components/assets/AddLiabilityDialog";
-import { AssetsList } from "@/components/assets/AssetsList";
-import { LiabilitiesList } from "@/components/assets/LiabilitiesList";
-import { OverviewDashboard } from "@/components/assets/OverviewDashboard";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { SummaryCards } from "@/components/assets/SummaryCards";
+import { LoadingSpinner } from "@/components/assets/LoadingSpinner";
+import { ContentTabs } from "@/components/assets/ContentTabs";
+import { useFinanceData } from "@/hooks/useFinanceData";
 
 const AssetsLiabilities = () => {
   useProtectedRoute();
@@ -22,73 +19,10 @@ const AssetsLiabilities = () => {
   const { toast } = useToast();
   const [showAddAsset, setShowAddAsset] = useState(false);
   const [showAddLiability, setShowAddLiability] = useState(false);
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [liabilities, setLiabilities] = useState<Liability[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-
-      try {
-        console.log('Fetching data for user:', user.id);
-        // First, get the estate project for this user
-        const { data: projectData, error: projectError } = await supabase
-          .from('estate_projects')
-          .select('id')
-          .eq('responsible_heir_id', user.id)
-          .maybeSingle();
-
-        if (projectError) {
-          console.error('Error fetching project:', projectError);
-          return;
-        }
-
-        if (!projectData) {
-          console.log('No project found for user');
-          return;
-        }
-
-        console.log('Found project:', projectData);
-
-        // Fetch assets
-        const { data: assetsData, error: assetsError } = await supabase
-          .from('assets')
-          .select('*')
-          .eq('estate_project_id', projectData.id);
-
-        if (assetsError) {
-          console.error('Error fetching assets:', assetsError);
-        } else {
-          console.log('Fetched assets:', assetsData);
-          setAssets(assetsData as Asset[] || []);
-        }
-
-        // Fetch liabilities
-        const { data: liabilitiesData, error: liabilitiesError } = await supabase
-          .from('liabilities')
-          .select('*')
-          .eq('estate_project_id', projectData.id);
-
-        if (liabilitiesError) {
-          console.error('Error fetching liabilities:', liabilitiesError);
-        } else {
-          console.log('Fetched liabilities:', liabilitiesData);
-          setLiabilities(liabilitiesData as Liability[] || []);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [user]);
+  const { assets, setAssets, liabilities, setLiabilities, isLoading } = useFinanceData(user);
 
   const handleAddAsset = async (asset: Omit<Asset, 'id' | 'estate_project_id'>) => {
     try {
-      // Get the project ID first
       const { data: projectData } = await supabase
         .from('estate_projects')
         .select('id')
@@ -132,7 +66,6 @@ const AssetsLiabilities = () => {
 
   const handleAddLiability = async (liability: Omit<Liability, 'id' | 'estate_project_id'>) => {
     try {
-      // Get the project ID first
       const { data: projectData } = await supabase
         .from('estate_projects')
         .select('id')
@@ -175,16 +108,7 @@ const AssetsLiabilities = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="container mx-auto px-4 pt-24">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          </div>
-        </main>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -198,87 +122,16 @@ const AssetsLiabilities = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <House className="h-5 w-5" />
-                Totale Eiendeler
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' })
-                  .format(assets.reduce((sum, asset) => sum + asset.estimated_value, 0))}
-              </p>
-            </CardContent>
-          </Card>
+        <SummaryCards assets={assets} liabilities={liabilities} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Total Gjeld
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' })
-                  .format(liabilities.reduce((sum, liability) => sum + liability.amount, 0))}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Netto Verdi
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' })
-                  .format(
-                    assets.reduce((sum, asset) => sum + asset.estimated_value, 0) -
-                    liabilities.reduce((sum, liability) => sum + liability.amount, 0)
-                  )}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Oversikt</TabsTrigger>
-            <TabsTrigger value="assets">Eiendeler</TabsTrigger>
-            <TabsTrigger value="liabilities">Gjeld</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
-            <OverviewDashboard assets={assets} liabilities={liabilities} />
-          </TabsContent>
-
-          <TabsContent value="assets">
-            <div className="mb-4">
-              <Button onClick={() => setShowAddAsset(true)} className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" />
-                Legg til Eiendel
-              </Button>
-            </div>
-            <AssetsList assets={assets} setAssets={setAssets} />
-          </TabsContent>
-
-          <TabsContent value="liabilities">
-            <div className="mb-4">
-              <Button onClick={() => setShowAddLiability(true)} className="flex items-center gap-2">
-                <MinusCircle className="h-4 w-4" />
-                Legg til Gjeld
-              </Button>
-            </div>
-            <LiabilitiesList liabilities={liabilities} setLiabilities={setLiabilities} />
-          </TabsContent>
-        </Tabs>
+        <ContentTabs
+          assets={assets}
+          liabilities={liabilities}
+          setAssets={setAssets}
+          setLiabilities={setLiabilities}
+          setShowAddAsset={setShowAddAsset}
+          setShowAddLiability={setShowAddLiability}
+        />
 
         <AddAssetDialog
           open={showAddAsset}
