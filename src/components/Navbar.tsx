@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ export const Navbar = () => {
                   </NavigationMenuItem>
                   <NavigationMenuItem>
                     <Link
-                      to="/documents"
+                      to="/document-management"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
                     >
                       Dokumenter
@@ -77,7 +78,7 @@ export const Navbar = () => {
                   </NavigationMenuItem>
                   <NavigationMenuItem>
                     <Link
-                      to="/tasks"
+                      to="/task-management"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
                     >
                       Oppgaver
@@ -85,7 +86,7 @@ export const Navbar = () => {
                   </NavigationMenuItem>
                   <NavigationMenuItem>
                     <Link
-                      to="/finance"
+                      to="/assets-liabilities"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
                     >
                       Eiendeler og Gjeld
@@ -168,19 +169,19 @@ export const Navbar = () => {
                   Oversikt
                 </Link>
                 <Link
-                  to="/documents"
+                  to="/document-management"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 >
                   Dokumenter
                 </Link>
                 <Link
-                  to="/tasks"
+                  to="/task-management"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 >
                   Oppgaver
                 </Link>
                 <Link
-                  to="/finance"
+                  to="/assets-liabilities"
                   className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                 >
                   Eiendeler og Gjeld
