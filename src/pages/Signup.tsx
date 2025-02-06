@@ -1,51 +1,23 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "../contexts/AuthContext";
 import { UserPlus } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { useSignupForm } from "../hooks/useSignupForm";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { signup } = useAuth();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await signup(email, password, name);
-      toast({
-        title: "Konto opprettet",
-        description: "Du er nå registrert og logget inn.",
-      });
-      navigate("/oversikt");
-    } catch (error: any) {
-      console.error("Signup error:", error);
-      
-      // Handle specific case where user already exists
-      if (error?.code === "user_already_exists") {
-        toast({
-          title: "E-postadressen er allerede i bruk",
-          description: "Vennligst logg inn eller bruk en annen e-postadresse.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Handle other errors
-      toast({
-        title: "Feil ved registrering",
-        description: "Kunne ikke opprette konto. Prøv igjen senere.",
-        variant: "destructive",
-      });
-    }
-  };
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    name,
+    setName,
+    handleSubmit
+  } = useSignupForm();
 
   return (
     <div className="min-h-screen bg-gray-50">
