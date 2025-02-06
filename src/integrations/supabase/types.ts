@@ -132,10 +132,14 @@ export type Database = {
           file_path: string
           file_type: string
           id: string
+          last_accessed_at: string | null
+          metadata: Json | null
           name: string
           project_id: string | null
+          tags: string[] | null
           updated_at: string | null
           uploaded_by: string | null
+          visibility: string | null
         }
         Insert: {
           created_at?: string | null
@@ -143,10 +147,14 @@ export type Database = {
           file_path: string
           file_type: string
           id?: string
+          last_accessed_at?: string | null
+          metadata?: Json | null
           name: string
           project_id?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           uploaded_by?: string | null
+          visibility?: string | null
         }
         Update: {
           created_at?: string | null
@@ -154,10 +162,14 @@ export type Database = {
           file_path?: string
           file_type?: string
           id?: string
+          last_accessed_at?: string | null
+          metadata?: Json | null
           name?: string
           project_id?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           uploaded_by?: string | null
+          visibility?: string | null
         }
         Relationships: [
           {
