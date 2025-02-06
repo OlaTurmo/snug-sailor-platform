@@ -682,6 +682,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           id: string
+          project_id: string | null
           status: string
           title: string
           updated_at: string | null
@@ -693,6 +694,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          project_id?: string | null
           status?: string
           title: string
           updated_at?: string | null
@@ -704,11 +706,20 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          project_id?: string | null
           status?: string
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "estate_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
