@@ -614,6 +614,13 @@ export type Database = {
       }
     }
     Functions: {
+      can_manage_estate: {
+        Args: {
+          estate_id: string
+          user_id: string
+        }
+        Returns: boolean
+      }
       can_manage_estate_members: {
         Args: {
           estate_id: string
