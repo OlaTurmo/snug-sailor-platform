@@ -7,11 +7,11 @@ export const Hero = () => {
   return (
     <div className="pt-24 pb-20 px-4 bg-gradient-to-b from-[#F5F5DC]/20 to-white">
       <div className="container mx-auto text-center">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] bg-clip-text text-transparent">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl md:text-4xl font-bold mb-8 bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] bg-clip-text text-transparent leading-relaxed">
             En enkel og trygg løsning for arveoppgjør
           </h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-lg md:text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
             Et dødsfall og et arveoppgjør kan være en krevende tid. Arv.ing er her for å gjøre prosessen enklere for deg og dine nærmeste.
           </p>
           <div className="flex gap-4 justify-center">
