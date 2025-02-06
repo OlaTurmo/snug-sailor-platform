@@ -1,50 +1,13 @@
 
-import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { Logo } from "./Logo";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { Logo } from "./Logo";
+import { DesktopNav } from "./navbar/DesktopNav";
+import { MobileMenu } from "./navbar/MobileMenu";
 
 export const Navbar = () => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-
-  const ListItem = ({
-    className,
-    title,
-    to,
-    ...props
-  }: {
-    className?: string;
-    title: string;
-    to: string;
-  }) => {
-    return (
-      <li>
-        <NavigationMenuLink asChild>
-          <Link
-            to={to}
-            className={cn(
-              "block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-              className
-            )}
-            {...props}
-          >
-            <div className="text-sm font-medium leading-none">{title}</div>
-          </Link>
-        </NavigationMenuLink>
-      </li>
-    );
-  };
 
   return (
     <nav className="bg-white shadow-sm">
@@ -56,64 +19,7 @@ export const Navbar = () => {
             </div>
           </div>
 
-          {user ? (
-            <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              <NavigationMenu>
-                <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <Link
-                      to="/oversikt"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
-                    >
-                      Oversikt
-                    </Link>
-                  </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <Link
-                      to="/document-management"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
-                    >
-                      Dokumenter
-                    </Link>
-                  </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <Link
-                      to="/task-management"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
-                    >
-                      Oppgaver
-                    </Link>
-                  </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <Link
-                      to="/assets-liabilities"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
-                    >
-                      Eiendeler og Gjeld
-                    </Link>
-                  </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <Link
-                      to="/boregnskap"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
-                    >
-                      Boregnskap
-                    </Link>
-                  </NavigationMenuItem>
-                </NavigationMenuList>
-              </NavigationMenu>
-
-              <Button onClick={() => logout()} variant="outline" className="ml-4">
-                Logg ut
-              </Button>
-            </div>
-          ) : (
-            <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              <Link to="/login">
-                <Button variant="outline">Logg inn</Button>
-              </Link>
-            </div>
-          )}
+          <DesktopNav user={user} logout={logout} />
 
           <div className="flex items-center sm:hidden">
             <button
@@ -157,60 +63,7 @@ export const Navbar = () => {
         </div>
       </div>
 
-      {isOpen && (
-        <div className="sm:hidden">
-          <div className="pt-2 pb-3 space-y-1">
-            {user ? (
-              <>
-                <Link
-                  to="/oversikt"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  Oversikt
-                </Link>
-                <Link
-                  to="/document-management"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  Dokumenter
-                </Link>
-                <Link
-                  to="/task-management"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  Oppgaver
-                </Link>
-                <Link
-                  to="/assets-liabilities"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  Eiendeler og Gjeld
-                </Link>
-                <Link
-                  to="/boregnskap"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-                >
-                  Boregnskap
-                </Link>
-                <Button
-                  onClick={() => logout()}
-                  variant="outline"
-                  className="w-full mt-4"
-                >
-                  Logg ut
-                </Button>
-              </>
-            ) : (
-              <Link
-                to="/login"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-              >
-                Logg inn
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
+      <MobileMenu isOpen={isOpen} user={user} logout={logout} />
     </nav>
   );
 };
