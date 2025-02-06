@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface Document {
+interface DocumentItem {
   id: string;
   name: string;
   file_path: string;
@@ -22,7 +22,7 @@ interface Document {
 }
 
 export const DocumentList = ({ onDocumentDeleted }: { onDocumentDeleted: () => void }) => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -51,7 +51,7 @@ export const DocumentList = ({ onDocumentDeleted }: { onDocumentDeleted: () => v
     fetchDocuments();
   }, []);
 
-  const handleDownload = async (document: Document) => {
+  const handleDownload = async (document: DocumentItem) => {
     try {
       const { data, error } = await supabase.storage
         .from('documents')
@@ -61,12 +61,12 @@ export const DocumentList = ({ onDocumentDeleted }: { onDocumentDeleted: () => v
 
       // Create a download link
       const url = window.URL.createObjectURL(data);
-      const link = document.createElement('a');
+      const link = window.document.createElement('a');
       link.href = url;
       link.download = document.name;
-      document.body.appendChild(link);
+      window.document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      window.document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Download error:', error);
@@ -78,7 +78,7 @@ export const DocumentList = ({ onDocumentDeleted }: { onDocumentDeleted: () => v
     }
   };
 
-  const handleDelete = async (document: Document) => {
+  const handleDelete = async (document: DocumentItem) => {
     try {
       // Delete from storage
       const { error: storageError } = await supabase.storage
