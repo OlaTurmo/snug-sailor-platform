@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole, Permission } from '../types/user';
 import { supabase } from '../lib/supabase';
@@ -42,6 +43,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           hint: profileError.hint,
           code: profileError.code
         });
+
+        // If profile doesn't exist, create it
+        if (profileError.code === 'PGRST116') {
+          const { data: authUser } = await supabase.auth.getUser();
+          if (authUser?.user) {
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([
+                {
+                  id: supabaseUserId,
+                  email: authUser.user.email,
+                  name: authUser.user.email?.split('@')[0] || 'User',
+                  role: 'responsible_heir',
+                  permissions: ['full_edit']
+                }
+              ])
+              .select()
+              .single();
+
+            if (createError) throw createError;
+            if (newProfile) {
+              console.log('Created new profile:', newProfile);
+              setUser({
+                id: newProfile.id,
+                email: newProfile.email,
+                name: newProfile.name,
+                role: newProfile.role,
+                permissions: newProfile.permissions,
+                createdAt: new Date(newProfile.created_at),
+                updatedAt: new Date(newProfile.updated_at),
+              });
+              return;
+            }
+          }
+        }
         throw profileError;
       }
 
@@ -150,61 +186,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log('User signed up successfully:', authData.user.id);
 
-      // Wait briefly for the trigger to execute
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Attempt to create profile if it doesn't exist
-      const { data: existingProfile, error: checkError } = await supabase
+      // Create profile immediately after signup
+      const { error: profileError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle();
-
-      if (!existingProfile) {
-        console.log('Profile not found, creating manually...');
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              name,
-              email,
-              role: 'responsible_heir',
-              permissions: ['full_edit']
-            }
-          ])
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Manual profile creation error:', insertError);
-          throw insertError;
-        }
-      }
-
-      // Final profile fetch attempt
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
+        .insert([
+          {
+            id: authData.user.id,
+            name,
+            email,
+            role: 'responsible_heir',
+            permissions: ['full_edit']
+          }
+        ])
+        .select()
         .single();
 
-      if (profileError || !profile) {
-        console.error('Final profile fetch error:', profileError);
-        throw profileError || new Error('Profile not found after creation');
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw profileError;
       }
 
-      console.log('Profile verified successfully:', profile);
-
-      setUser({
+      // Set the user state
+      const userData: User = {
         id: authData.user.id,
         email,
         name,
-        role: profile.role || 'responsible_heir',
-        permissions: profile.permissions || ['full_edit'],
-        createdAt: new Date(profile.created_at),
-        updatedAt: new Date(profile.updated_at),
-      });
+        role: 'responsible_heir',
+        permissions: ['full_edit'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      setUser(userData);
+      
     } catch (error) {
       console.error('Signup process failed:', error);
       throw error;

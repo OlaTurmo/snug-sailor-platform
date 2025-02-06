@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -6,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -37,7 +39,7 @@ const Login = () => {
         });
         
         console.log('Attempting navigation to /oversikt');
-        navigate("/oversikt", { replace: true });
+        navigate("/oversikt");
         console.log('Navigation command executed');
       } else {
         console.log('No user data received after login');
@@ -47,11 +49,20 @@ const Login = () => {
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      let errorMessage = "Vennligst sjekk brukernavn og passord.";
+      
+      // Handle specific error cases
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = "Feil brukernavn eller passord.";
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = "E-posten din er ikke bekreftet. Sjekk innboksen din.";
+      }
+      
       toast({
         title: "Feil ved innlogging",
-        description: "Vennligst sjekk brukernavn og passord.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -67,6 +78,15 @@ const Login = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Logg inn på din konto
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Eller{" "}
+            <Link
+              to="/signup"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
+              opprett en ny konto
+            </Link>
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
