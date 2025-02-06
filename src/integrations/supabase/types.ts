@@ -125,17 +125,111 @@ export type Database = {
         }
         Relationships: []
       }
+      document_folders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          parent_folder_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          parent_folder_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          parent_folder_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_tag_relations: {
+        Row: {
+          created_at: string
+          document_id: string
+          tag_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_id: string
+          tag_id: string
+        }
+        Update: {
+          created_at?: string
+          document_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_tag_relations_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_tag_relations_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "document_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string | null
           description: string | null
           file_path: string
           file_type: string
+          folder_id: string | null
           id: string
           last_accessed_at: string | null
           metadata: Json | null
           name: string
           project_id: string | null
+          sort_order: number | null
           tags: string[] | null
           updated_at: string | null
           uploaded_by: string | null
@@ -146,11 +240,13 @@ export type Database = {
           description?: string | null
           file_path: string
           file_type: string
+          folder_id?: string | null
           id?: string
           last_accessed_at?: string | null
           metadata?: Json | null
           name: string
           project_id?: string | null
+          sort_order?: number | null
           tags?: string[] | null
           updated_at?: string | null
           uploaded_by?: string | null
@@ -161,17 +257,26 @@ export type Database = {
           description?: string | null
           file_path?: string
           file_type?: string
+          folder_id?: string | null
           id?: string
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string
           project_id?: string | null
+          sort_order?: number | null
           tags?: string[] | null
           updated_at?: string | null
           uploaded_by?: string | null
           visibility?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "documents_project_id_fkey"
             columns: ["project_id"]
