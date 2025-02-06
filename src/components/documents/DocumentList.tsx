@@ -125,22 +125,20 @@ export const DocumentList = ({ onDocumentDeleted }: { onDocumentDeleted: () => v
     items.splice(result.destination.index, 0, reorderedItem);
 
     // Update sort_order for all affected items
-    const updates = items.map((doc, index) => ({
-      id: doc.id,
-      sort_order: index,
-    }));
+    for (let i = 0; i < items.length; i++) {
+      const { error } = await supabase
+        .from('documents')
+        .update({ sort_order: i })
+        .eq('id', items[i].id);
 
-    const { error } = await supabase
-      .from('documents')
-      .upsert(updates);
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update document order",
-        variant: "destructive",
-      });
-      return;
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update document order",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setDocuments(items);
