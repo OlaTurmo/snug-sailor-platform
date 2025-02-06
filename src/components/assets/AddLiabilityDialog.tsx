@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Liability, LiabilityType } from "@/types/finance";
 interface AddLiabilityDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (liability: Liability) => void;
+  onAdd: (liability: Omit<Liability, 'id' | 'estate_project_id'>) => void;
 }
 
 export const AddLiabilityDialog = ({ open, onOpenChange, onAdd }: AddLiabilityDialogProps) => {
@@ -22,14 +23,12 @@ export const AddLiabilityDialog = ({ open, onOpenChange, onAdd }: AddLiabilityDi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const liability: Liability = {
-      id: crypto.randomUUID(),
-      project_id: "default",
+    const liability = {
       name,
       type,
       amount: parseFloat(amount),
       due_date: dueDate,
-      status: "pending",
+      status: "pending" as const,
       created_at: new Date().toISOString(),
     };
     onAdd(liability);

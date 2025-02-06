@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Asset, AssetType } from "@/types/finance";
 interface AddAssetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (asset: Asset) => void;
+  onAdd: (asset: Omit<Asset, 'id' | 'estate_project_id'>) => void;
 }
 
 export const AddAssetDialog = ({ open, onOpenChange, onAdd }: AddAssetDialogProps) => {
@@ -21,15 +22,13 @@ export const AddAssetDialog = ({ open, onOpenChange, onAdd }: AddAssetDialogProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const asset: Asset = {
-      id: crypto.randomUUID(),
-      project_id: "default",
+    const asset = {
       name,
       type,
       description,
       estimated_value: parseFloat(estimatedValue),
       valuation_date: new Date().toISOString(),
-      status: "active",
+      status: "active" as const,
       created_at: new Date().toISOString(),
     };
     onAdd(asset);
