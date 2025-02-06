@@ -43,7 +43,7 @@ const TaskManagement = () => {
   });
 
   // First, fetch available projects for the user
-  const { data: projects } = useQuery({
+  const { data: projects, isLoading: projectsLoading, error: projectsError } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
       console.log('Fetching projects for user:', user?.id);
@@ -66,9 +66,13 @@ const TaskManagement = () => {
   // Use the first project as default if available
   const defaultProjectId = projects?.[0]?.id;
 
-  const { data: tasks, isLoading, error } = useQuery({
+  const { data: tasks, isLoading: tasksLoading, error: tasksError } = useQuery({
     queryKey: ["tasks", defaultProjectId],
     queryFn: async () => {
+      if (!defaultProjectId) {
+        throw new Error('No project available');
+      }
+      
       console.log('Fetching tasks for project:', defaultProjectId);
       const { data, error } = await supabase
         .from("tasks")
@@ -195,24 +199,46 @@ const TaskManagement = () => {
     });
   };
 
-  if (error) {
+  // Handle loading states for both projects and tasks
+  if (projectsLoading || (tasksLoading && defaultProjectId)) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="flex flex-col items-center justify-center h-screen">
-          <h1 className="text-2xl font-bold text-red-500 mb-4">Feil ved lasting av oppgaver</h1>
-          <p className="text-gray-600">{(error as Error).message}</p>
+        <div className="container mx-auto px-4 pt-24">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Laster inn...</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (isLoading) {
+  // Handle project error
+  if (projectsError) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="flex items-center justify-center h-screen">
-          <Loader2 className="animate-spin h-8 w-8" />
+        <div className="container mx-auto px-4 pt-24">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Feil ved lasting av prosjekter</h2>
+            <p className="text-gray-600">{(projectsError as Error).message}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle no projects available
+  if (!projects || projects.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-4 pt-24">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">Ingen prosjekter tilgjengelig</h2>
+            <p className="text-gray-600">Du må være tilknyttet minst ett prosjekt for å administrere oppgaver.</p>
+          </div>
         </div>
       </div>
     );
@@ -264,57 +290,63 @@ const TaskManagement = () => {
           </Button>
         </form>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tittel</TableHead>
-              <TableHead>Beskrivelse</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Frist</TableHead>
-              <TableHead>Handlinger</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tasks?.map((task) => (
-              <TableRow key={task.id}>
-                <TableCell>{task.title}</TableCell>
-                <TableCell>{task.description}</TableCell>
-                <TableCell>{task.status}</TableCell>
-                <TableCell>
-                  {task.deadline ? new Date(task.deadline).toLocaleString('no-NO') : 'Ingen frist'}
-                </TableCell>
-                <TableCell>
-                  <select
-                    value={task.status}
-                    onChange={(e) =>
-                      updateTaskStatus.mutate({
-                        taskId: task.id,
-                        status: e.target.value,
-                      })
-                    }
-                    className="border rounded p-1"
-                    disabled={updateTaskStatus.isPending}
-                  >
-                    <option value="pending">Ikke påbegynt</option>
-                    <option value="in_progress">Pågår</option>
-                    <option value="completed">Fullført</option>
-                  </select>
-                </TableCell>
-              </TableRow>
-            ))}
-            {(!tasks || tasks.length === 0) && (
+        {tasksError ? (
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-red-600 mb-2">Feil ved lasting av oppgaver</h2>
+            <p className="text-gray-600">{(tasksError as Error).message}</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4">
-                  Ingen oppgaver funnet. Opprett din første oppgave ovenfor.
-                </TableCell>
+                <TableHead>Tittel</TableHead>
+                <TableHead>Beskrivelse</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Frist</TableHead>
+                <TableHead>Handlinger</TableHead>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {tasks?.map((task) => (
+                <TableRow key={task.id}>
+                  <TableCell>{task.title}</TableCell>
+                  <TableCell>{task.description}</TableCell>
+                  <TableCell>{task.status}</TableCell>
+                  <TableCell>
+                    {task.deadline ? new Date(task.deadline).toLocaleString('no-NO') : 'Ingen frist'}
+                  </TableCell>
+                  <TableCell>
+                    <select
+                      value={task.status}
+                      onChange={(e) =>
+                        updateTaskStatus.mutate({
+                          taskId: task.id,
+                          status: e.target.value,
+                        })
+                      }
+                      className="border rounded p-1"
+                      disabled={updateTaskStatus.isPending}
+                    >
+                      <option value="pending">Ikke påbegynt</option>
+                      <option value="in_progress">Pågår</option>
+                      <option value="completed">Fullført</option>
+                    </select>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!tasks || tasks.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-4">
+                    Ingen oppgaver funnet. Opprett din første oppgave ovenfor.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
       </main>
     </div>
   );
 };
 
 export default TaskManagement;
-
