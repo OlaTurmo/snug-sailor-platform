@@ -561,7 +561,7 @@ export type Database = {
           message: string
           read: boolean | null
           title: string
-          type: string
+          type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Insert: {
@@ -570,7 +570,7 @@ export type Database = {
           message: string
           read?: boolean | null
           title: string
-          type: string
+          type: Database["public"]["Enums"]["notification_type"]
           user_id: string
         }
         Update: {
@@ -579,7 +579,7 @@ export type Database = {
           message?: string
           read?: boolean | null
           title?: string
-          type?: string
+          type?: Database["public"]["Enums"]["notification_type"]
           user_id?: string
         }
         Relationships: []
@@ -766,6 +766,12 @@ export type Database = {
     }
     Enums: {
       estate_member_role: "viewer" | "editor" | "administrator"
+      notification_type:
+        | "task_reminder"
+        | "document_update"
+        | "asset_update"
+        | "task_assignment"
+        | "system_notification"
     }
     CompositeTypes: {
       [_ in never]: never
