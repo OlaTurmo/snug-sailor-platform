@@ -43,14 +43,19 @@ const TaskManagement = () => {
   });
 
   // First, fetch available projects for the user
-  const { data: projects, isLoading: projectsLoading, error: projectsError } = useQuery({
+  const { data: projects, isLoading: projectsLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
       console.log('Fetching projects for user:', user?.id);
+      if (!user?.id) {
+        console.log('No user ID available');
+        return [];
+      }
+
       const { data, error } = await supabase
         .from("estate_projects")
         .select("*")
-        .or(`responsible_heir_id.eq.${user?.id},id.in.(select project_id from project_users where user_id = ${user?.id})`);
+        .or(`responsible_heir_id.eq.${user.id},id.in.(select project_id from project_users where user_id = ${user.id})`);
 
       if (error) {
         console.error('Error fetching projects:', error);
@@ -58,7 +63,7 @@ const TaskManagement = () => {
       }
       
       console.log('Projects fetched:', data);
-      return data;
+      return data || [];
     },
     enabled: !!user?.id,
   });
@@ -66,11 +71,12 @@ const TaskManagement = () => {
   // Use the first project as default if available
   const defaultProjectId = projects?.[0]?.id;
 
-  const { data: tasks, isLoading: tasksLoading, error: tasksError } = useQuery({
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
     queryKey: ["tasks", defaultProjectId],
     queryFn: async () => {
       if (!defaultProjectId) {
-        throw new Error('No project available');
+        console.log('No default project ID available');
+        return [];
       }
       
       console.log('Fetching tasks for project:', defaultProjectId);
@@ -86,21 +92,25 @@ const TaskManagement = () => {
       }
       
       console.log('Tasks fetched:', data);
-      return data as Task[];
+      return data || [];
     },
     enabled: !!defaultProjectId && !!user?.id,
   });
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: Partial<Task>) => {
+      if (!user?.id || !defaultProjectId) {
+        throw new Error('Missing user ID or project ID');
+      }
+
       console.log('Creating new task:', taskData);
       const { data, error } = await supabase
         .from("tasks")
         .insert([{ 
           ...taskData,
           status: 'pending',
-          created_by: user?.id,
-          assigned_to: user?.id,
+          created_by: user.id,
+          assigned_to: user.id,
           project_id: defaultProjectId
         }])
         .select()
@@ -175,31 +185,13 @@ const TaskManagement = () => {
 
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id) {
-      toast({
-        title: "Autentisering kreves",
-        description: "Vennligst logg inn for å opprette oppgaver.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!defaultProjectId) {
-      toast({
-        title: "Prosjekt kreves",
-        description: "Du må være tilknyttet et prosjekt for å opprette oppgaver.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     createTaskMutation.mutate({
       ...newTask,
-      deadline: new Date(newTask.deadline).toISOString(),
+      deadline: newTask.deadline ? new Date(newTask.deadline).toISOString() : null,
     });
   };
 
-  // Handle loading states for both projects and tasks
+  // Handle loading states
   if (projectsLoading || (tasksLoading && defaultProjectId)) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -208,21 +200,6 @@ const TaskManagement = () => {
           <div className="flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin" />
             <span className="ml-2">Laster inn...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle project error
-  if (projectsError) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="container mx-auto px-4 pt-24">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">Feil ved lasting av prosjekter</h2>
-            <p className="text-gray-600">{(projectsError as Error).message}</p>
           </div>
         </div>
       </div>
@@ -273,13 +250,12 @@ const TaskManagement = () => {
               onChange={(e) =>
                 setNewTask({ ...newTask, deadline: e.target.value })
               }
-              required
             />
           </div>
           <Button 
             type="submit" 
             className="w-full md:w-auto"
-            disabled={createTaskMutation.isPending || !user?.id || !defaultProjectId}
+            disabled={createTaskMutation.isPending}
           >
             {createTaskMutation.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -290,24 +266,19 @@ const TaskManagement = () => {
           </Button>
         </form>
 
-        {tasksError ? (
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">Feil ved lasting av oppgaver</h2>
-            <p className="text-gray-600">{(tasksError as Error).message}</p>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tittel</TableHead>
-                <TableHead>Beskrivelse</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Frist</TableHead>
-                <TableHead>Handlinger</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tasks?.map((task) => (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tittel</TableHead>
+              <TableHead>Beskrivelse</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Frist</TableHead>
+              <TableHead>Handlinger</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tasks && tasks.length > 0 ? (
+              tasks.map((task) => (
                 <TableRow key={task.id}>
                   <TableCell>{task.title}</TableCell>
                   <TableCell>{task.description}</TableCell>
@@ -333,17 +304,16 @@ const TaskManagement = () => {
                     </select>
                   </TableCell>
                 </TableRow>
-              ))}
-              {(!tasks || tasks.length === 0) && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
-                    Ingen oppgaver funnet. Opprett din første oppgave ovenfor.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-4">
+                  Ingen oppgaver funnet. Opprett din første oppgave ovenfor.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </main>
     </div>
   );
