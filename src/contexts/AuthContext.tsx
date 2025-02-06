@@ -2,6 +2,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserRole, Permission } from '../types/user';
 import { supabase } from '../lib/supabase';
+import { useAuthOperations } from '../hooks/useAuthOperations';
+import { useProfileManagement } from '../hooks/useProfileManagement';
 
 interface AuthContextType {
   user: User | null;
@@ -18,211 +20,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const updateUserState = async (supabaseUserId: string) => {
-    console.log('=== Profile Fetch Process Start ===');
-    console.log('Attempting to fetch profile for user ID:', supabaseUserId);
-    
-    try {
-      if (!supabaseUserId) {
-        console.error('Invalid user ID provided');
-        throw new Error('Invalid user ID provided');
-      }
-
-      console.log('Making database query to profiles table...');
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', supabaseUserId)
-        .single();
-
-      if (profileError) {
-        console.error('Profile fetch failed:', {
-          message: profileError.message,
-          details: profileError.details,
-          hint: profileError.hint,
-          code: profileError.code
-        });
-
-        // If profile doesn't exist, create it
-        if (profileError.code === 'PGRST116') {
-          const { data: authUser } = await supabase.auth.getUser();
-          if (authUser?.user) {
-            const { data: newProfile, error: createError } = await supabase
-              .from('profiles')
-              .insert([
-                {
-                  id: supabaseUserId,
-                  email: authUser.user.email,
-                  name: authUser.user.email?.split('@')[0] || 'User',
-                  role: 'responsible_heir',
-                  permissions: ['full_edit']
-                }
-              ])
-              .select()
-              .single();
-
-            if (createError) throw createError;
-            if (newProfile) {
-              console.log('Created new profile:', newProfile);
-              setUser({
-                id: newProfile.id,
-                email: newProfile.email,
-                name: newProfile.name,
-                role: newProfile.role,
-                permissions: newProfile.permissions,
-                createdAt: new Date(newProfile.created_at),
-                updatedAt: new Date(newProfile.updated_at),
-              });
-              return;
-            }
-          }
-        }
-        throw profileError;
-      }
-
-      if (!profile) {
-        console.error('No profile data returned for ID:', supabaseUserId);
-        throw new Error('Profile not found');
-      }
-
-      console.log('Profile data retrieved successfully:', profile);
-
-      const userData: User = {
-        id: supabaseUserId,
-        email: profile.email,
-        name: profile.name,
-        role: profile.role || 'responsible_heir',
-        permissions: profile.permissions || ['full_edit'],
-        createdAt: new Date(profile.created_at),
-        updatedAt: new Date(profile.updated_at),
-      };
-
-      console.log('Setting user state with validated data:', userData);
-      setUser(userData);
-      console.log('User state updated successfully');
-      return userData;
-      
-    } catch (error) {
-      console.error('Profile fetch process failed:', error);
-      setUser(null);
-      throw error;
-    } finally {
-      setIsLoading(false);
-      console.log('=== Profile Fetch Process End ===');
-    }
-  };
+  const { login: authLogin, logout: authLogout, signup: authSignup } = useAuthOperations();
+  const { updateUserState } = useProfileManagement();
 
   const login = async (email: string, password: string) => {
-    console.log('Starting login process...', { email });
-    
-    try {
-      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        console.error('Sign in error:', signInError);
-        throw signInError;
-      }
-
-      if (!authUser) {
-        console.error('No user returned after login');
-        throw new Error('No user returned after login');
-      }
-
-      console.log('Supabase auth successful, fetching user profile');
-      
-      // Immediately fetch and update user profile
-      const userData = await updateUserState(authUser.id);
-      console.log('User profile fetched and state updated:', userData);
-      
-      if (userData) {
-        return { user: userData };
-      }
-      
-    } catch (error) {
-      console.error('Login process failed:', error);
-      throw error;
+    const result = await authLogin(email, password);
+    if (result?.user) {
+      setUser(result.user);
     }
+    return result;
   };
 
   const logout = async () => {
-    try {
-      console.log('Logging out...');
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setUser(null);
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    }
+    await authLogout();
+    setUser(null);
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    try {
-      console.log('Starting signup process...', { email, name });
-      
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name
-          }
-        }
-      });
-
-      if (signUpError) {
-        console.error('Signup error:', signUpError);
-        throw signUpError;
-      }
-
-      if (!authData.user) {
-        console.error('No user returned after signup');
-        throw new Error('No user returned after signup');
-      }
-
-      console.log('User signed up successfully:', authData.user.id);
-
-      // Create profile immediately after signup
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: authData.user.id,
-            name,
-            email,
-            role: 'responsible_heir',
-            permissions: ['full_edit']
-          }
-        ])
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error('Profile creation error:', profileError);
-        throw profileError;
-      }
-
-      // Set the user state
-      const userData: User = {
-        id: authData.user.id,
-        email,
-        name,
-        role: 'responsible_heir',
-        permissions: ['full_edit'],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      setUser(userData);
-      
-    } catch (error) {
-      console.error('Signup process failed:', error);
-      throw error;
-    }
+    const userData = await authSignup(email, password, name);
+    setUser(userData);
   };
 
   const hasPermission = (permission: Permission): boolean => {
@@ -248,7 +64,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (session?.user && mounted) {
           console.log('Active session found:', session.user.id);
-          await updateUserState(session.user.id);
+          const userData = await updateUserState(session.user.id);
+          if (mounted && userData) {
+            setUser(userData);
+          }
         } else {
           console.log('No active session found');
           if (mounted) setUser(null);
@@ -271,7 +90,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (event === 'SIGNED_IN' && session?.user && mounted) {
         console.log('Processing SIGNED_IN event for user:', session.user.id);
         try {
-          await updateUserState(session.user.id);
+          const userData = await updateUserState(session.user.id);
+          if (mounted && userData) {
+            setUser(userData);
+          }
         } catch (error) {
           console.error('Failed to update user state after sign in:', error);
         }
