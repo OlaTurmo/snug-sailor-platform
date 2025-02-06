@@ -5,7 +5,7 @@ import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MinusCircle, DollarSign, CreditCard, House, Car, Database } from "lucide-react";
+import { PlusCircle, MinusCircle, DollarSign, CreditCard, House } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Asset, AssetType, Liability, LiabilityType } from "@/types/finance";
 import { AddAssetDialog } from "@/components/assets/AddAssetDialog";
@@ -31,6 +31,7 @@ const AssetsLiabilities = () => {
       if (!user) return;
 
       try {
+        console.log('Fetching data for user:', user.id);
         // First, get the estate project for this user
         const { data: projectData, error: projectError } = await supabase
           .from('estate_projects')
@@ -48,6 +49,8 @@ const AssetsLiabilities = () => {
           return;
         }
 
+        console.log('Found project:', projectData);
+
         // Fetch assets
         const { data: assetsData, error: assetsError } = await supabase
           .from('assets')
@@ -57,7 +60,8 @@ const AssetsLiabilities = () => {
         if (assetsError) {
           console.error('Error fetching assets:', assetsError);
         } else {
-          setAssets(assetsData || []);
+          console.log('Fetched assets:', assetsData);
+          setAssets(assetsData as Asset[] || []);
         }
 
         // Fetch liabilities
@@ -69,7 +73,8 @@ const AssetsLiabilities = () => {
         if (liabilitiesError) {
           console.error('Error fetching liabilities:', liabilitiesError);
         } else {
-          setLiabilities(liabilitiesData || []);
+          console.log('Fetched liabilities:', liabilitiesData);
+          setLiabilities(liabilitiesData as Liability[] || []);
         }
       } catch (error) {
         console.error('Error:', error);
@@ -81,7 +86,7 @@ const AssetsLiabilities = () => {
     fetchData();
   }, [user]);
 
-  const handleAddAsset = async (asset: Asset) => {
+  const handleAddAsset = async (asset: Omit<Asset, 'id' | 'estate_project_id'>) => {
     try {
       // Get the project ID first
       const { data: projectData } = await supabase
@@ -109,7 +114,7 @@ const AssetsLiabilities = () => {
         throw error;
       }
 
-      setAssets([...assets, data]);
+      setAssets([...assets, data as Asset]);
       setShowAddAsset(false);
       toast({
         title: "Eiendel lagt til",
@@ -125,7 +130,7 @@ const AssetsLiabilities = () => {
     }
   };
 
-  const handleAddLiability = async (liability: Liability) => {
+  const handleAddLiability = async (liability: Omit<Liability, 'id' | 'estate_project_id'>) => {
     try {
       // Get the project ID first
       const { data: projectData } = await supabase
@@ -153,7 +158,7 @@ const AssetsLiabilities = () => {
         throw error;
       }
 
-      setLiabilities([...liabilities, data]);
+      setLiabilities([...liabilities, data as Liability]);
       setShowAddLiability(false);
       toast({
         title: "Gjeld lagt til",

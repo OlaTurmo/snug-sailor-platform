@@ -6,7 +6,7 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Asset {
   id: string;
-  project_id: string;  // Changed from estate_project_id
+  estate_project_id: string;
   name: string;
   type: AssetType;
   description?: string;
@@ -21,7 +21,7 @@ export interface Asset {
 
 export interface Liability {
   id: string;
-  project_id: string;  // Changed from estate_project_id
+  estate_project_id: string;
   name: string;
   type: LiabilityType;
   amount: number;
