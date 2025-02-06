@@ -8,7 +8,7 @@ export const Hero = () => {
     <div className="pt-24 pb-20 px-4 bg-gradient-to-b from-[#F5F5DC]/20 to-white">
       <div className="container mx-auto text-center">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-[#4A90E2] to-[#2C3E50] bg-clip-text text-transparent">
             En enkel og trygg løsning for arveoppgjør
           </h1>
           <p className="text-xl text-gray-600 mb-8">
