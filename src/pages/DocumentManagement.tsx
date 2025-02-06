@@ -1,14 +1,17 @@
+
 import { Navbar } from "@/components/Navbar";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { FileUpload } from "@/components/documents/FileUpload";
+import { DocumentList } from "@/components/documents/DocumentList";
 
 const DocumentManagement = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -21,6 +24,10 @@ const DocumentManagement = () => {
     }
   }, [user, navigate, toast]);
 
+  const handleDocumentChange = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   if (!user) {
     return null;
   }
@@ -29,22 +36,18 @@ const DocumentManagement = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">Dokumenthåndtering</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">Dokumenthåndtering</h1>
+          <FileUpload onUploadComplete={handleDocumentChange} />
+        </div>
+
         <div className="grid gap-6">
           <section>
             <h2 className="text-2xl font-semibold mb-4">Mine Dokumenter</h2>
-            <div className="bg-card rounded-lg p-6 shadow-sm">
-              <p className="text-muted-foreground mb-4">
-                Ingen dokumenter lastet opp ennå
-              </p>
-              <Button>Last opp dokument</Button>
-            </div>
-          </section>
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Nylige Aktiviteter</h2>
-            <div className="bg-card rounded-lg p-6 shadow-sm">
-              <p className="text-muted-foreground">Ingen nylige aktiviteter</p>
-            </div>
+            <DocumentList 
+              key={refreshKey} 
+              onDocumentDeleted={handleDocumentChange} 
+            />
           </section>
         </div>
       </main>
