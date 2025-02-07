@@ -742,6 +742,13 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_project: {
+        Args: {
+          project_id: string
+          checking_user_id: string
+        }
+        Returns: boolean
+      }
       can_manage_estate: {
         Args: {
           estate_id: string
