@@ -43,9 +43,16 @@ export const useAuthOperations = () => {
 
   const logout = async () => {
     try {
-      console.log('Logging out...');
+      console.log('Starting logout process...');
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error('Logout error:', error);
+        throw error;
+      }
+      console.log('Logout successful');
+      
+      // Force reload the page to clear any cached state
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       throw error;

@@ -4,6 +4,7 @@ import { User, UserRole, Permission } from '../types/user';
 import { supabase } from '../lib/supabase';
 import { useAuthOperations } from '../hooks/useAuthOperations';
 import { useProfileManagement } from '../hooks/useProfileManagement';
+import { useToast } from "@/components/ui/use-toast";
 
 interface AuthContextType {
   user: User | null;
@@ -22,23 +23,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { login: authLogin, logout: authLogout, signup: authSignup } = useAuthOperations();
   const { updateUserState } = useProfileManagement();
+  const { toast } = useToast();
 
   const login = async (email: string, password: string) => {
     const result = await authLogin(email, password);
     if (result?.user) {
       setUser(result.user);
+      toast({
+        title: "Success",
+        description: "You have been logged in successfully",
+      });
     }
     return result;
   };
 
   const logout = async () => {
-    await authLogout();
-    setUser(null);
+    try {
+      await authLogout();
+      setUser(null);
+      toast({
+        title: "Success",
+        description: "You have been logged out successfully",
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    }
   };
 
   const signup = async (email: string, password: string, name: string) => {
     const userData = await authSignup(email, password, name);
     setUser(userData);
+    toast({
+      title: "Success",
+      description: "Account created successfully",
+    });
   };
 
   const hasPermission = (permission: Permission): boolean => {
