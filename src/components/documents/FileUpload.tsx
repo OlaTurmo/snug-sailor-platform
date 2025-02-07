@@ -56,9 +56,7 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       if (uploadError) {
         console.error('Storage upload error:', {
           message: uploadError.message,
-          details: uploadError.details,
-          hint: uploadError.hint,
-          code: uploadError.code
+          name: uploadError.name
         });
         throw uploadError;
       }
@@ -88,6 +86,7 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       if (dbError) {
         console.error('Database insert error:', {
           message: dbError.message,
+          // Postgres error details are available on database errors
           details: dbError.details,
           hint: dbError.hint,
           code: dbError.code
@@ -107,8 +106,7 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       console.error('Full error details:', {
         name: error.name,
         message: error.message,
-        stack: error.stack,
-        cause: error.cause
+        stack: error.stack
       });
       
       let errorMessage = "Failed to upload document";
