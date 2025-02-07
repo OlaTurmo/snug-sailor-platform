@@ -1,13 +1,15 @@
+
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = "https://your-project.supabase.co"; // Replace with your actual Supabase project URL
-const supabaseAnonKey = "your-anon-key"; // Replace with your actual anon key
+const supabaseUrl = "https://nuoyastudqphomimqagu.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51b3lhc3R1ZHFwaG9taW1xYWd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgwNTk3ODQsImV4cCI6MjA1MzYzNTc4NH0.u4bOlOOwCKOdF6qKqd8XDxcUqmUhCXTdJ07IOF5s35U";
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true, // ✅ Keeps session across page reloads
-    autoRefreshToken: true, // ✅ Automatically refresh tokens
-    detectSessionInUrl: true, // ✅ Ensures session is handled correctly
+    persistSession: true,
+    storage: window.localStorage,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
   },
 });
 
@@ -17,17 +19,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const getSessionAndSetAuth = async () => {
   console.log("Fetching session and setting authentication...");
 
-  const { data: session, error } = await supabase.auth.getSession();
+  const { data: { session }, error } = await supabase.auth.getSession();
 
   if (error) {
     console.error("Error fetching session:", error);
     return;
   }
 
-  if (session?.session) {
+  if (session) {
     console.log("Setting authentication token...");
-    await supabase.auth.setSession(session.session);
+    await supabase.auth.setSession(session);
   } else {
     console.warn("No session token found.");
   }
 };
+
