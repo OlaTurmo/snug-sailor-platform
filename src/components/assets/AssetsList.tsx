@@ -1,7 +1,10 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Asset } from "@/types/finance";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AssetsListProps {
   assets: Asset[];
@@ -9,8 +12,32 @@ interface AssetsListProps {
 }
 
 export const AssetsList = ({ assets, setAssets }: AssetsListProps) => {
-  const handleDelete = (id: string) => {
-    setAssets(assets.filter(asset => asset.id !== id));
+  const { toast } = useToast();
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('assets')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setAssets(assets.filter(asset => asset.id !== id));
+      toast({
+        title: "Eiendel slettet",
+        description: "Eiendelen har blitt slettet fra oversikten.",
+      });
+    } catch (error) {
+      console.error('Error deleting asset:', error);
+      toast({
+        title: "Feil",
+        description: "Kunne ikke slette eiendelen.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getAssetTypeLabel = (type: Asset["type"]) => {

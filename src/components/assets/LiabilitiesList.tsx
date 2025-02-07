@@ -1,7 +1,10 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Liability } from "@/types/finance";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/components/ui/use-toast";
 
 interface LiabilitiesListProps {
   liabilities: Liability[];
@@ -9,8 +12,32 @@ interface LiabilitiesListProps {
 }
 
 export const LiabilitiesList = ({ liabilities, setLiabilities }: LiabilitiesListProps) => {
-  const handleDelete = (id: string) => {
-    setLiabilities(liabilities.filter(liability => liability.id !== id));
+  const { toast } = useToast();
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('liabilities')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      setLiabilities(liabilities.filter(liability => liability.id !== id));
+      toast({
+        title: "Gjeld slettet",
+        description: "Gjelden har blitt slettet fra oversikten.",
+      });
+    } catch (error) {
+      console.error('Error deleting liability:', error);
+      toast({
+        title: "Feil",
+        description: "Kunne ikke slette gjelden.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getLiabilityTypeLabel = (type: Liability["type"]) => {
