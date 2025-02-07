@@ -14,8 +14,12 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
   const navigate = useNavigate();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Starting file upload process...');
-    
+    const file = event.target.files?.[0];
+    if (!file) {
+      console.error('No file selected');
+      return;
+    }
+
     if (!user) {
       console.error('No authenticated user found');
       toast({
@@ -27,100 +31,62 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       return;
     }
 
-    console.log('User authenticated:', { userId: user.id });
-
-    const file = event.target.files?.[0];
-    if (!file) {
-      console.error('No file selected');
-      return;
-    }
-
-    console.log('File details:', {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
-
+    console.log('Starting upload for user:', user.id);
+    
     setIsUploading(true);
     try {
-      // Upload file to Supabase Storage
+      // Create user-specific folder path
       const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      console.log('Generated filename:', fileName);
+      const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+      
+      console.log('Uploading to path:', fileName);
 
-      console.log('Starting Supabase storage upload...');
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('documents')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
-        console.error('Storage upload error:', {
-          message: uploadError.message,
-          name: uploadError.name
-        });
+        console.error('Storage upload error:', uploadError);
         throw uploadError;
       }
 
       console.log('File uploaded successfully:', uploadData);
 
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('documents')
-        .getPublicUrl(fileName);
-
-      console.log('Generated public URL:', publicUrl);
-
       // Create document record in the database
-      console.log('Creating database record...');
-      const { error: dbError, data: dbData } = await supabase
+      const { error: dbError } = await supabase
         .from('documents')
         .insert({
           name: file.name,
           file_path: fileName,
           file_type: file.type,
           uploaded_by: user.id,
+          sort_order: 0
         })
-        .select()
         .single();
 
       if (dbError) {
-        console.error('Database insert error:', {
-          message: dbError.message,
-          // Postgres error details are available on database errors
-          details: dbError.details,
-          hint: dbError.hint,
-          code: dbError.code
-        });
+        console.error('Database insert error:', dbError);
         throw dbError;
       }
-
-      console.log('Database record created:', dbData);
 
       toast({
         title: "Success",
         description: "Document uploaded successfully",
       });
+      
       onUploadComplete();
     } catch (error) {
       console.error('Upload process failed:', error);
-      console.error('Full error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      });
-      
-      let errorMessage = "Failed to upload document";
-      if (error.message) {
-        errorMessage += `: ${error.message}`;
-      }
       
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error.message || "Failed to upload document",
         variant: "destructive",
       });
     } finally {
-      console.log('Upload process completed');
       setIsUploading(false);
     }
   };
