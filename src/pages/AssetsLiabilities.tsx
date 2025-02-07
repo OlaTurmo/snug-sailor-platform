@@ -14,8 +14,7 @@ import { ContentTabs } from "@/components/assets/ContentTabs";
 import { useFinanceData } from "@/hooks/useFinanceData";
 
 const AssetsLiabilities = () => {
-  useProtectedRoute();
-  const { user } = useAuth();
+  const { user } = useProtectedRoute(); // This will ensure user is authenticated
   const { toast } = useToast();
   const [showAddAsset, setShowAddAsset] = useState(false);
   const [showAddLiability, setShowAddLiability] = useState(false);
