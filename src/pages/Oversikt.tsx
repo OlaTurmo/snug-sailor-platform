@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useProtectedRoute } from "../hooks/useProtectedRoute";
 import { useAuth } from "../contexts/AuthContext";
@@ -62,7 +63,7 @@ const Oversikt = () => {
       setError(null);
       console.log('Starting data fetch for user:', user.id);
       
-      // Fetch estates with detailed error logging
+      // Fetch estates first
       console.log('Fetching estates...');
       const { data: estatesData, error: estatesError } = await supabase
         .from('estates')
