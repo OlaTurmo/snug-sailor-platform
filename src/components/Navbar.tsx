@@ -6,7 +6,7 @@ import { DesktopNav } from "./navbar/DesktopNav";
 import { MobileMenu } from "./navbar/MobileMenu";
 
 export const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -19,7 +19,7 @@ export const Navbar = () => {
             </div>
           </div>
 
-          <DesktopNav user={user} logout={logout} />
+          <DesktopNav user={user} logout={signOut} />
 
           <div className="flex items-center sm:hidden">
             <button
@@ -63,7 +63,7 @@ export const Navbar = () => {
         </div>
       </div>
 
-      <MobileMenu isOpen={isOpen} user={user} logout={logout} />
+      <MobileMenu isOpen={isOpen} user={user} logout={signOut} />
     </nav>
   );
 };
