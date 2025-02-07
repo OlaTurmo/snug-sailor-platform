@@ -22,10 +22,24 @@ const TaskManagement = () => {
         return [];
       }
 
+      // First get the project IDs where the user is a member
+      const { data: projectUsers, error: projectUsersError } = await supabase
+        .from("project_users")
+        .select("project_id")
+        .eq("user_id", user.id);
+
+      if (projectUsersError) {
+        console.error('Error fetching project users:', projectUsersError);
+        throw projectUsersError;
+      }
+
+      const projectIds = projectUsers?.map(pu => pu.project_id) || [];
+
+      // Then fetch projects where user is either responsible heir or a member
       const { data, error } = await supabase
         .from("estate_projects")
         .select("*")
-        .or(`responsible_heir_id.eq.${user.id},id.in.(select project_id from project_users where user_id = ${user.id})`);
+        .or(`responsible_heir_id.eq.${user.id},id.in.(${projectIds.join(',')})`);
 
       if (error) {
         console.error('Error fetching projects:', error);
@@ -115,3 +129,4 @@ const TaskManagement = () => {
 };
 
 export default TaskManagement;
+
