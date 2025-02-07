@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -40,19 +41,43 @@ export default function Boregnskap() {
   const fetchProjects = async () => {
     try {
       console.log('Fetching projects...');
-      const { data: projectsData, error: projectsError } = await supabase
+      
+      // First get projects where user is responsible heir
+      const { data: responsibleProjects, error: responsibleError } = await supabase
         .from('estate_projects')
         .select('id, name')
-        .or(`responsible_heir_id.eq.${user?.id},id.in.(select project_id from project_users where user_id = ${user?.id})`);
+        .eq('responsible_heir_id', user?.id);
 
-      if (projectsError) throw projectsError;
+      if (responsibleError) throw responsibleError;
 
-      console.log('Projects fetched:', projectsData);
-      setProjects(projectsData || []);
+      // Then get projects where user is a member
+      const { data: memberProjects, error: memberError } = await supabase
+        .from('project_users')
+        .select('project_id, estate_projects!inner(id, name)')
+        .eq('user_id', user?.id);
+
+      if (memberError) throw memberError;
+
+      // Combine and deduplicate projects
+      const combinedProjects = [
+        ...(responsibleProjects || []),
+        ...(memberProjects || []).map(mp => ({
+          id: mp.project_id,
+          name: mp.estate_projects.name
+        }))
+      ];
+
+      // Remove duplicates based on project id
+      const uniqueProjects = Array.from(
+        new Map(combinedProjects.map(p => [p.id, p])).values()
+      );
+
+      console.log('Projects fetched:', uniqueProjects);
+      setProjects(uniqueProjects);
       
-      if (projectsData?.[0]) {
-        setSelectedProject(projectsData[0].id);
-        fetchTransactions(projectsData[0].id);
+      if (uniqueProjects[0]) {
+        setSelectedProject(uniqueProjects[0].id);
+        fetchTransactions(uniqueProjects[0].id);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
