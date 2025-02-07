@@ -3,15 +3,16 @@ import { useEffect, useState } from "react";
 import { useProtectedRoute } from "../hooks/useProtectedRoute";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "../components/Navbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
-import { Check, X, ArrowRight, List, Calendar, User, Upload, Send, Divide, Bell } from "lucide-react";
+import { Upload, Send, Divide } from "lucide-react";
+import { EstatesSection } from "@/components/overview/EstatesSection";
+import { ProgressSection } from "@/components/overview/ProgressSection";
+import { TasksSection } from "@/components/overview/TasksSection";
+import { NotificationsSection } from "@/components/overview/NotificationsSection";
 import { AddEstateDialog } from "@/components/estates/AddEstateDialog";
-import { InviteUserDialog } from "@/components/estates/InviteUserDialog";
 
 interface Task {
   id: string;
@@ -71,20 +72,13 @@ const Oversikt = () => {
         .order('created_at', { ascending: false });
 
       if (estatesError) {
-        console.error('Error fetching estates:', {
-          error: estatesError,
-          message: estatesError.message,
-          details: estatesError.details,
-          hint: estatesError.hint
-        });
+        console.error('Error fetching estates:', estatesError);
         throw new Error(`Failed to fetch estates: ${estatesError.message}`);
       }
       
-      console.log('Estates fetched successfully:', estatesData);
       setEstates(estatesData || []);
       
-      // Fetch tasks with detailed error logging
-      console.log('Fetching tasks...');
+      // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
@@ -92,20 +86,12 @@ const Oversikt = () => {
         .order('created_at', { ascending: false });
 
       if (tasksError) {
-        console.error('Error fetching tasks:', {
-          error: tasksError,
-          message: tasksError.message,
-          details: tasksError.details,
-          hint: tasksError.hint
-        });
         throw new Error(`Failed to fetch tasks: ${tasksError.message}`);
       }
 
-      console.log('Tasks fetched successfully:', tasksData);
       setTasks(tasksData || []);
       
-      // Fetch notifications with detailed error logging
-      console.log('Fetching notifications...');
+      // Fetch notifications
       const { data: notificationsData, error: notificationsError } = await supabase
         .from('notifications')
         .select('*')
@@ -113,19 +99,12 @@ const Oversikt = () => {
         .order('created_at', { ascending: false });
 
       if (notificationsError) {
-        console.error('Error fetching notifications:', {
-          error: notificationsError,
-          message: notificationsError.message,
-          details: notificationsError.details,
-          hint: notificationsError.hint
-        });
         throw new Error(`Failed to fetch notifications: ${notificationsError.message}`);
       }
 
-      console.log('Notifications fetched successfully:', notificationsData);
       setNotifications(notificationsData || []);
       
-      // Calculate progress based on completed tasks
+      // Calculate progress
       if (tasksData) {
         const completedTasks = tasksData.filter(task => task.status === 'completed').length;
         const totalTasks = tasksData.length;
@@ -147,21 +126,15 @@ const Oversikt = () => {
   };
 
   useEffect(() => {
-    console.log('Oversikt component mounted');
-    console.log('Current user state:', user);
-    
     if (user) {
-      console.log('User is authenticated, initiating data fetch');
       fetchData();
     } else {
-      console.log('No user found in useEffect');
       setError('Vennligst logg inn for å se denne siden');
       setIsLoading(false);
     }
   }, [user]);
 
   const handleUploadDocument = () => {
-    // TODO: Implement document upload
     toast({
       title: "Last opp dokument",
       description: "Denne funksjonen kommer snart.",
@@ -169,7 +142,6 @@ const Oversikt = () => {
   };
 
   const handleAssignTask = () => {
-    // TODO: Implement task assignment
     toast({
       title: "Tildel oppgave",
       description: "Denne funksjonen kommer snart.",
@@ -177,7 +149,6 @@ const Oversikt = () => {
   };
 
   const handleStartDivision = () => {
-    // TODO: Implement inheritance division
     toast({
       title: "Start arveoppgjør",
       description: "Denne funksjonen kommer snart.",
@@ -216,68 +187,13 @@ const Oversikt = () => {
             </Card>
           ) : (
             <>
-              {/* Estates Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Aktive bo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Navn på bo</TableHead>
-                          <TableHead>Avdød</TableHead>
-                          <TableHead>Dødsdato</TableHead>
-                          <TableHead>Fødselsnummer</TableHead>
-                          <TableHead>Handlinger</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {estates.map((estate) => (
-                          <TableRow key={estate.id}>
-                            <TableCell>{estate.name}</TableCell>
-                            <TableCell>{estate.deceased_name}</TableCell>
-                            <TableCell>
-                              {new Date(estate.deceased_date).toLocaleDateString('no-NO')}
-                            </TableCell>
-                            <TableCell>{estate.deceased_id_number}</TableCell>
-                            <TableCell>
-                              <InviteUserDialog estateId={estate.id} />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {estates.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center py-4">
-                              Ingen aktive bo
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
+              <EstatesSection estates={estates} onEstateCreated={fetchData} />
+              <ProgressSection 
+                progress={progress} 
+                completedTasks={tasks.filter(t => t.status === 'completed').length}
+                totalTasks={tasks.length}
+              />
 
-              {/* Progress Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ArrowRight className="h-5 w-5" />
-                    Fremdrift
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Progress value={progress} className="h-2" />
-                  <div className="mt-4 flex justify-between text-sm text-gray-600">
-                    <span>{Math.round(progress)}% fullført</span>
-                    <span>{tasks.filter(t => t.status === 'completed').length} av {tasks.length} oppgaver fullført</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Button
                   onClick={handleUploadDocument}
@@ -306,90 +222,8 @@ const Oversikt = () => {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Tasks Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <List className="h-5 w-5" />
-                      Oppgaver
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Oppgave</TableHead>
-                            <TableHead>Frist</TableHead>
-                            <TableHead>Tildelt</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {tasks.map((task) => (
-                            <TableRow key={task.id}>
-                              <TableCell>
-                                {task.status === 'completed' ? (
-                                  <Check className="h-5 w-5 text-green-500" />
-                                ) : (
-                                  <X className="h-5 w-5 text-red-500" />
-                                )}
-                              </TableCell>
-                              <TableCell>{task.title}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4" />
-                                  {new Date(task.deadline).toLocaleDateString('no-NO')}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <User className="h-4 w-4" />
-                                  {task.assigned_to}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Notifications Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bell className="h-5 w-5" />
-                      Varsler
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-4 rounded-lg border ${
-                            notification.read ? 'bg-gray-50' : 'bg-white'
-                          }`}
-                        >
-                          <h4 className="font-medium">{notification.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {notification.message}
-                          </p>
-                          <span className="text-xs text-gray-500 mt-2 block">
-                            {new Date(notification.created_at).toLocaleString('no-NO')}
-                          </span>
-                        </div>
-                      ))}
-                      {notifications.length === 0 && (
-                        <p className="text-center text-gray-500 py-4">
-                          Ingen nye varsler
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <TasksSection tasks={tasks} />
+                <NotificationsSection notifications={notifications} />
               </div>
             </>
           )}
