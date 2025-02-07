@@ -4,12 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void }) => {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to upload documents",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -36,7 +50,7 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
           name: file.name,
           file_path: fileName,
           file_type: file.type,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+          uploaded_by: user.id,
         });
 
       if (dbError) throw dbError;
