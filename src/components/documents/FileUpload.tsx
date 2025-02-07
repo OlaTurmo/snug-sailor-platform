@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -9,9 +9,22 @@ import { useNavigate } from "react-router-dom";
 
 export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void }) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+      }
+      setIsCheckingAuth(false);
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -20,7 +33,7 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       return;
     }
 
-    // First verify session
+    // Get current session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
       console.error('No active session found');
@@ -92,6 +105,10 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       setIsUploading(false);
     }
   };
+
+  if (isCheckingAuth) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <div className="flex items-center gap-2">
