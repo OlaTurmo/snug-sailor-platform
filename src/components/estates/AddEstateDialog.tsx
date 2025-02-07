@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -55,16 +56,23 @@ export function AddEstateDialog({ onEstateCreated }: AddEstateDialogProps) {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      console.log("Creating new estate with values:", values);
+      if (!user?.id) {
+        throw new Error('User must be logged in to create an estate');
+      }
+
+      console.log("Creating new estate with values:", { ...values, user_id: user.id });
       const { error } = await supabase.from("estates").insert({
         name: values.name,
         deceased_name: values.deceased_name,
         deceased_date: values.deceased_date,
         deceased_id_number: values.deceased_id_number,
-        user_id: user?.id,
+        user_id: user.id,  // Explicitly set the user_id
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating estate:", error);
+        throw error;
+      }
 
       console.log("Estate created successfully");
       toast({
