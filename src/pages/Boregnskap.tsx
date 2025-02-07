@@ -14,6 +14,19 @@ import {
 import { Navbar } from "@/components/Navbar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface Project {
+  id: string;
+  name: string;
+}
+
+interface ProjectUserResult {
+  project_id: string;
+  estate_projects: {
+    id: string;
+    name: string;
+  };
+}
+
 export default function Boregnskap() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -25,7 +38,7 @@ export default function Boregnskap() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
-  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
     console.log('Boregnskap component mounted, user:', user);
@@ -59,9 +72,9 @@ export default function Boregnskap() {
       if (memberError) throw memberError;
 
       // Combine and deduplicate projects
-      const combinedProjects = [
+      const combinedProjects: Project[] = [
         ...(responsibleProjects || []),
-        ...(memberProjects || []).map(mp => ({
+        ...(memberProjects || []).map((mp: ProjectUserResult) => ({
           id: mp.project_id,
           name: mp.estate_projects.name
         }))
