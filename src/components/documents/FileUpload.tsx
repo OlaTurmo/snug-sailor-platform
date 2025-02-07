@@ -9,22 +9,15 @@ import { useNavigate } from "react-router-dom";
 
 export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void }) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/login");
-      }
-      setIsCheckingAuth(false);
-    };
-
-    checkAuth();
-  }, [navigate]);
+    if (!user) {
+      navigate("/login");
+    }
+  }, [user, navigate]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,10 +26,9 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       return;
     }
 
-    // Get current session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      console.error('No active session found');
+    // Check if user is still authenticated
+    if (!user) {
+      console.error('No authenticated user found');
       toast({
         title: "Authentication required",
         description: "Please log in to upload documents",
@@ -46,13 +38,13 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       return;
     }
 
-    console.log('Starting upload with session:', session.user.id);
+    console.log('Starting upload with user:', user.id);
     
     setIsUploading(true);
     try {
       // Create user-specific folder path
       const fileExt = file.name.split('.').pop();
-      const fileName = `${session.user.id}/${crypto.randomUUID()}.${fileExt}`;
+      const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
       
       console.log('Uploading to path:', fileName);
 
@@ -77,7 +69,7 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
           name: file.name,
           file_path: fileName,
           file_type: file.type,
-          uploaded_by: session.user.id,
+          uploaded_by: user.id,
           sort_order: 0
         })
         .single();
@@ -106,8 +98,8 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
     }
   };
 
-  if (isCheckingAuth) {
-    return null; // Or a loading spinner
+  if (!user) {
+    return null;
   }
 
   return (
@@ -134,3 +126,4 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
     </div>
   );
 };
+
