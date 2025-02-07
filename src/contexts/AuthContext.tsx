@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { getSessionAndSetAuth } from "@/integrations/supabase/client";
+import { supabase, getSessionAndSetAuth } from "@/integrations/supabase/client";
 
-// Define the shape of the authentication context
+// Define authentication context shape
 interface AuthContextType {
   user: any;
   isLoading: boolean;
@@ -12,7 +11,7 @@ interface AuthContextType {
 // Create the authentication context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Custom hook to use authentication context
+// Hook to use authentication context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -21,7 +20,7 @@ export const useAuth = () => {
   return context;
 };
 
-// AuthProvider component to wrap the application
+// AuthProvider component
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +30,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("=== Checking Supabase Session ===");
 
       try {
-        await getSessionAndSetAuth(); // Ensure the token is set
+        await getSessionAndSetAuth(); // Force session retrieval
 
         const { data: { session }, error } = await supabase.auth.getSession();
 
@@ -41,11 +40,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        if (session?.user) {
-          console.log("Active session found:", session.user.id);
-          setUser(session.user);
+        if (session?.session) {
+          console.log("Active session found:", session.session.user.id);
+          setUser(session.session.user);
         } else {
-          console.log("No active session found");
+          console.log("No active session found.");
           setUser(null);
         }
       } catch (error) {
