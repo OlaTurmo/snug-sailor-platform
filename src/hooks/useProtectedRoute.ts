@@ -35,3 +35,4 @@ export const useProtectedRoute = (options: ProtectedRouteOptions = {}) => {
 
   return { isLoading, user };
 };
+
