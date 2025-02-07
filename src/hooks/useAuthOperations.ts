@@ -10,6 +10,10 @@ export const useAuthOperations = () => {
     console.log('Starting login process...', { email });
     
     try {
+      // First clear any existing session
+      await supabase.auth.signOut();
+      console.log('Cleared existing session');
+
       const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -27,6 +31,10 @@ export const useAuthOperations = () => {
 
       console.log('Supabase auth successful, fetching user profile');
       
+      // Verify session is set
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session after login:', session?.user.id);
+
       // Immediately fetch and update user profile
       const userData = await updateUserState(authUser.id);
       console.log('User profile fetched and state updated:', userData);

@@ -33,6 +33,9 @@ export const useLoginForm = () => {
           description: "Du er nå logget inn.",
         });
         
+        // Add a small delay to ensure session is properly set
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         console.log('Attempting navigation to /oversikt');
         navigate("/oversikt");
         console.log('Navigation command executed');

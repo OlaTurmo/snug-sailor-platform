@@ -20,8 +20,10 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       return;
     }
 
-    if (!user) {
-      console.error('No authenticated user found');
+    // First verify session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      console.error('No active session found');
       toast({
         title: "Authentication required",
         description: "Please log in to upload documents",
@@ -31,13 +33,13 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
       return;
     }
 
-    console.log('Starting upload for user:', user.id);
+    console.log('Starting upload with session:', session.user.id);
     
     setIsUploading(true);
     try {
       // Create user-specific folder path
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${crypto.randomUUID()}.${fileExt}`;
+      const fileName = `${session.user.id}/${crypto.randomUUID()}.${fileExt}`;
       
       console.log('Uploading to path:', fileName);
 
@@ -62,7 +64,7 @@ export const FileUpload = ({ onUploadComplete }: { onUploadComplete: () => void 
           name: file.name,
           file_path: fileName,
           file_type: file.type,
-          uploaded_by: user.id,
+          uploaded_by: session.user.id,
           sort_order: 0
         })
         .single();
