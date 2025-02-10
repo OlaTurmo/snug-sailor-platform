@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { FinanceTransaction, FinanceSummary } from "@/types/finance";
 import {
   Card,
@@ -75,7 +75,7 @@ export default function Boregnskap() {
       const combinedProjects: Project[] = [
         ...(responsibleProjects || []),
         ...(memberProjects || []).map((mp: ProjectUserResult) => ({
-          id: mp.project_id,
+          id: mp.estate_projects.id,
           name: mp.estate_projects.name
         }))
       ];

@@ -7,9 +7,10 @@ const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
-    storage: window.localStorage,
+    storage: localStorage,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    flowType: 'pkce',
   },
 });
 
@@ -19,18 +20,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const getSessionAndSetAuth = async () => {
   console.log("Fetching session and setting authentication...");
 
-  const { data: { session }, error } = await supabase.auth.getSession();
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-  if (error) {
-    console.error("Error fetching session:", error);
-    return;
-  }
+    if (error) {
+      console.error("Error fetching session:", error);
+      return;
+    }
 
-  if (session) {
-    console.log("Setting authentication token...");
-    await supabase.auth.setSession(session);
-  } else {
-    console.warn("No session token found.");
+    if (session) {
+      console.log("Setting authentication token...");
+      await supabase.auth.setSession(session);
+    } else {
+      console.warn("No session token found.");
+    }
+  } catch (error) {
+    console.error("Error in getSessionAndSetAuth:", error);
   }
 };
+
+// Add detailed logging for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  console.log('Auth state change event:', event);
+  if (session) {
+    console.log('Session details:', {
+      userId: session.user?.id,
+      email: session.user?.email,
+      lastSignIn: session.user?.last_sign_in_at
+    });
+  } else {
+    console.log('No active session');
+  }
+});
 
