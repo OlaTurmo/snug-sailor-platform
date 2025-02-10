@@ -33,7 +33,7 @@ export const DesktopNav = ({ user, logout }: DesktopNavProps) => {
               to="/oversikt"
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent hover:text-accent-foreground rounded-md"
             >
-              Oversikt
+              Arbeidsflyt
             </Link>
           </NavigationMenuItem>
           <NavigationMenuItem>
