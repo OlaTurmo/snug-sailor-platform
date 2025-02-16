@@ -6,7 +6,7 @@ import { Navbar } from "../components/Navbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Upload, Send, Divide } from "lucide-react";
 import { EstatesSection } from "@/components/overview/EstatesSection";
 import { ProgressSection } from "@/components/overview/ProgressSection";
